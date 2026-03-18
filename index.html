@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ÂMINA — Moda gringa de força e superação. Peças internacionais para mulheres que reinam." />
+  <title>ÂMINA — Moda Gringa</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ===== ANNOUNCEMENT BAR ===== -->
+  <div class="announcement-bar">
+    <p>Frete grátis acima de R$499 &nbsp;|&nbsp; Novas coleções toda semana &nbsp;|&nbsp; <a href="#">Conheça a história de Âmina</a></p>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header" id="header">
+    <div class="header__inner">
+
+      <button class="header__menu-btn" id="menuBtn" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <a href="index.html" class="header__logo">
+        <img src="assets/images/logo-vinho.png" alt="ÂMINA" class="logo-light" />
+        <img src="assets/images/logo-preto.png" alt="ÂMINA" class="logo-dark" />
+      </a>
+
+      <nav class="header__nav" id="headerNav">
+        <a href="#colecoes">Coleções</a>
+        <a href="#novidades">Novidades</a>
+        <a href="#lookbook">Lookbook</a>
+        <a href="#sobre">Nossa História</a>
+        <a href="#contato">Contato</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="btn-icon" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="btn-icon" aria-label="Favoritos"><i class="fa-regular fa-heart"></i></button>
+        <button class="btn-icon cart-btn" id="cartBtn" aria-label="Carrinho">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===== MOBILE MENU ===== -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-menu__close" id="closeMenu"><i class="fa-solid fa-xmark"></i></button>
+    <nav class="mobile-menu__nav">
+      <a href="#colecoes" class="mobile-link">Coleções</a>
+      <a href="#novidades" class="mobile-link">Novidades</a>
+      <a href="#lookbook" class="mobile-link">Lookbook</a>
+      <a href="#sobre" class="mobile-link">Nossa História</a>
+      <a href="#contato" class="mobile-link">Contato</a>
+    </nav>
+    <div class="mobile-menu__footer">
+      <a href="#"><i class="fa-brands fa-instagram"></i></a>
+      <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+      <a href="#"><i class="fa-brands fa-pinterest"></i></a>
+    </div>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="inicio">
+    <div class="hero__bg">
+      <div class="hero__gradient"></div>
+    </div>
+    <div class="hero__content">
+      <span class="hero__eyebrow">Nova Coleção — 2026</span>
+      <h1 class="hero__title">
+        Ela não pediu<br />permissão<br /><em>para reinar.</em>
+      </h1>
+      <p class="hero__subtitle">
+        Moda gringa para mulheres que carregam força ancestral.<br />
+        Peças que contam histórias de superação.
+      </p>
+      <div class="hero__actions">
+        <a href="#novidades" class="btn btn--primary">Explorar Coleção</a>
+        <a href="#sobre" class="btn btn--ghost">Conheça a Âmina</a>
+      </div>
+    </div>
+    <div class="hero__scroll">
+      <span></span>
+      <p>Role para baixo</p>
+    </div>
+  </section>
+
+  <!-- ===== MANIFESTO STRIP ===== -->
+  <section class="manifesto-strip">
+    <div class="marquee">
+      <div class="marquee__track">
+        <span>FORÇA</span>
+        <span class="dot">✦</span>
+        <span>SUPERAÇÃO</span>
+        <span class="dot">✦</span>
+        <span>REALEZA</span>
+        <span class="dot">✦</span>
+        <span>ESTILO</span>
+        <span class="dot">✦</span>
+        <span>PODER</span>
+        <span class="dot">✦</span>
+        <span>IDENTIDADE</span>
+        <span class="dot">✦</span>
+        <span>FORÇA</span>
+        <span class="dot">✦</span>
+        <span>SUPERAÇÃO</span>
+        <span class="dot">✦</span>
+        <span>REALEZA</span>
+        <span class="dot">✦</span>
+        <span>ESTILO</span>
+        <span class="dot">✦</span>
+        <span>PODER</span>
+        <span class="dot">✦</span>
+        <span>IDENTIDADE</span>
+        <span class="dot">✦</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SOBRE / BRAND STORY ===== -->
+  <section class="brand-story" id="sobre">
+    <div class="container">
+      <div class="brand-story__grid">
+        <div class="brand-story__visual">
+          <div class="brand-story__img-wrap">
+            <div class="brand-story__img brand-story__img--1"></div>
+            <div class="brand-story__img brand-story__img--2"></div>
+          </div>
+          <div class="brand-story__tag">
+            <span class="brand-story__tag-year">Séc. XVI</span>
+            <span class="brand-story__tag-text">Reino de Zazzau, Nigéria</span>
+          </div>
+        </div>
+        <div class="brand-story__text">
+          <span class="eyebrow">Nossa Origem</span>
+          <h2 class="section-title">Inspirada em<br /><em>uma Rainha</em></h2>
+          <p>
+            Âmina foi uma poderosa rainha africana do século XVI que governou o reino de Zazzau, no atual norte da Nigéria. Conhecida como uma líder estratégica e destemida, ela comandou exércitos, expandiu territórios e fortaleceu rotas comerciais.
+          </p>
+          <p>
+            Nossa marca carrega o mesmo espírito: <strong>moda que empodera, veste a força e celebra a mulher que se reinventa a cada dia.</strong> Trazemos peças gringas cuidadosamente selecionadas para quem não tem medo de ocupar seu espaço.
+          </p>
+          <div class="brand-story__values">
+            <div class="value-item">
+              <i class="fa-solid fa-crown"></i>
+              <span>Realeza</span>
+            </div>
+            <div class="value-item">
+              <i class="fa-solid fa-bolt"></i>
+              <span>Força</span>
+            </div>
+            <div class="value-item">
+              <i class="fa-solid fa-star"></i>
+              <span>Superação</span>
+            </div>
+          </div>
+          <a href="#colecoes" class="btn btn--primary">Ver Coleções</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COLEÇÕES ===== -->
+  <section class="collections" id="colecoes">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Descubra</span>
+        <h2 class="section-title">Nossas <em>Coleções</em></h2>
+      </div>
+      <div class="collections__grid">
+
+        <a href="#" class="collection-card collection-card--large">
+          <div class="collection-card__bg collection-card__bg--1"></div>
+          <div class="collection-card__content">
+            <span class="collection-card__tag">Nova</span>
+            <h3>Poder Ancestral</h3>
+            <p>Peças que celebram origens e força interior</p>
+            <span class="collection-card__link">Explorar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </a>
+
+        <a href="#" class="collection-card">
+          <div class="collection-card__bg collection-card__bg--2"></div>
+          <div class="collection-card__content">
+            <h3>Street Luxe</h3>
+            <p>O gringo que virou brasileiro</p>
+            <span class="collection-card__link">Explorar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </a>
+
+        <a href="#" class="collection-card">
+          <div class="collection-card__bg collection-card__bg--3"></div>
+          <div class="collection-card__content">
+            <h3>Femme Forte</h3>
+            <p>Elegância que não pede licença</p>
+            <span class="collection-card__link">Explorar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </a>
+
+        <a href="#" class="collection-card">
+          <div class="collection-card__bg collection-card__bg--4"></div>
+          <div class="collection-card__content">
+            <h3>Night Reign</h3>
+            <p>Para quem reina mesmo no escuro</p>
+            <span class="collection-card__link">Explorar <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NOVIDADES / PRODUTOS ===== -->
+  <section class="products" id="novidades">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Acabou de chegar</span>
+        <h2 class="section-title">Novidades <em>da Semana</em></h2>
+        <a href="#" class="section-link">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+
+      <div class="products__filters">
+        <button class="filter-btn active" data-filter="todos">Todos</button>
+        <button class="filter-btn" data-filter="tops">Tops & Bodies</button>
+        <button class="filter-btn" data-filter="vestidos">Vestidos & Saias</button>
+        <button class="filter-btn" data-filter="calças">Calças</button>
+      </div>
+
+      <div class="products__grid" id="productsGrid">
+
+        <div class="product-card" data-category="tops">
+          <div class="product-card__media">
+            <img src="assets/images/produtos/produto-1.png" alt="Cropped Cris Poliamida Preto" class="product-card__img product-card__img--real" loading="lazy" />
+            <div class="product-card__overlay">
+              <button class="btn-add-cart" data-name="Cropped Cris Poliamida Preto" data-price="33">
+                <i class="fa-solid fa-bag-shopping"></i> Adicionar
+              </button>
+            </div>
+            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+            <span class="product-card__badge">Novo</span>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">Tops & Blusas</span>
+            <h4 class="product-card__name">Cropped Cris Poliamida</h4>
+            <div class="product-card__price">
+              <span class="price-current">R$ 33,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card" data-category="tops">
+          <div class="product-card__media">
+            <img src="assets/images/produtos/produto-2.png" alt="Cropped Triz Poliamida Marrom" class="product-card__img product-card__img--real" loading="lazy" />
+            <div class="product-card__overlay">
+              <button class="btn-add-cart" data-name="Cropped Triz Poliamida Marrom" data-price="30">
+                <i class="fa-solid fa-bag-shopping"></i> Adicionar
+              </button>
+            </div>
+            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">Tops & Blusas</span>
+            <h4 class="product-card__name">Cropped Triz Poliamida</h4>
+            <div class="product-card__price">
+              <span class="price-current">R$ 30,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card" data-category="tops">
+          <div class="product-card__media">
+            <img src="assets/images/produtos/produto-3.png" alt="Body Kika Poliamida Marrom" class="product-card__img product-card__img--real" loading="lazy" />
+            <div class="product-card__overlay">
+              <button class="btn-add-cart" data-name="Body Kika Poliamida Marrom" data-price="35">
+                <i class="fa-solid fa-bag-shopping"></i> Adicionar
+              </button>
+            </div>
+            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+            <span class="product-card__badge">Destaque</span>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">Tops & Blusas</span>
+            <h4 class="product-card__name">Body Kika Poliamida</h4>
+            <div class="product-card__price">
+              <span class="price-current">R$ 35,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card" data-category="calças">
+          <div class="product-card__media">
+            <img src="assets/images/produtos/produto-4.png" alt="Calça Britney Poliamida Marinho" class="product-card__img product-card__img--real" loading="lazy" />
+            <div class="product-card__overlay">
+              <button class="btn-add-cart" data-name="Calça Britney Poliamida Marinho" data-price="43">
+                <i class="fa-solid fa-bag-shopping"></i> Adicionar
+              </button>
+            </div>
+            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">Calças</span>
+            <h4 class="product-card__name">Calça Britney Poliamida</h4>
+            <div class="product-card__price">
+              <span class="price-current">R$ 43,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card" data-category="vestidos">
+          <div class="product-card__media">
+            <img src="assets/images/produtos/produto-5.png" alt="Saia Skylar Poliamida Rosa Bebê" class="product-card__img product-card__img--real" loading="lazy" />
+            <div class="product-card__overlay">
+              <button class="btn-add-cart" data-name="Saia Skylar Poliamida Rosa Bebê" data-price="38">
+                <i class="fa-solid fa-bag-shopping"></i> Adicionar
+              </button>
+            </div>
+            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+            <span class="product-card__badge">Novo</span>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__category">Vestidos & Saias</span>
+            <h4 class="product-card__name">Saia Skylar Poliamida</h4>
+            <div class="product-card__price">
+              <span class="price-current">R$ 38,00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LOOKBOOK ===== -->
+  <section class="lookbook" id="lookbook">
+    <div class="lookbook__header container">
+      <span class="eyebrow eyebrow--light">Editorial</span>
+      <h2 class="section-title section-title--light">Lookbook <em>2026</em></h2>
+    </div>
+    <div class="lookbook__grid">
+      <div class="lookbook__item lookbook__item--tall">
+        <div class="lookbook__img lookbook__img--1"></div>
+        <div class="lookbook__caption">
+          <span>Poder Ancestral</span>
+          <a href="#">Ver peças <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="lookbook__item">
+        <div class="lookbook__img lookbook__img--2"></div>
+        <div class="lookbook__caption">
+          <span>Street Luxe</span>
+          <a href="#">Ver peças <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="lookbook__item">
+        <div class="lookbook__img lookbook__img--3"></div>
+        <div class="lookbook__caption">
+          <span>Femme Forte</span>
+          <a href="#">Ver peças <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="lookbook__item lookbook__item--wide">
+        <div class="lookbook__img lookbook__img--4"></div>
+        <div class="lookbook__caption">
+          <span>Night Reign</span>
+          <a href="#">Ver peças <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DIFERENCIAIS ===== -->
+  <section class="features">
+    <div class="container">
+      <div class="features__grid">
+        <div class="feature-item">
+          <i class="fa-solid fa-globe"></i>
+          <h4>Moda Gringa</h4>
+          <p>Peças importadas selecionadas a dedo de tendências internacionais</p>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-truck-fast"></i>
+          <h4>Entrega Rápida</h4>
+          <p>Frete grátis para todo o Brasil em compras acima de R$499</p>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <h4>Compra Segura</h4>
+          <p>Site seguro, parcelamento em até 12x sem juros</p>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-rotate-left"></i>
+          <h4>Troca Fácil</h4>
+          <p>30 dias para troca ou devolução, sem burocracia</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEPOIMENTOS ===== -->
+  <section class="testimonials">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">O que dizem</span>
+        <h2 class="section-title">Quem já <em>reina</em></h2>
+      </div>
+      <div class="testimonials__grid">
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p>"A blusa chegou em perfeito estado, qualidade incrível. Me senti uma rainha mesmo! A ÂMINA capturou exatamente o que eu precisava para me sentir poderosa."</p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar avatar-1"></div>
+            <div>
+              <strong>Juliana M.</strong>
+              <span>São Paulo, SP</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p>"Comprei o conjunto Âmina Set e recebi mil elogios no trabalho. Essa marca entende moda de verdade, peças gringas com preço justo e entrega super rápida."</p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar avatar-2"></div>
+            <div>
+              <strong>Carla F.</strong>
+              <span>Rio de Janeiro, RJ</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p>"A história da rainha Âmina me tocou profundamente. Mais do que moda, é empoderamento. Já fiz três compras e voltarei sempre. Recomendo de olhos fechados!"</p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar avatar-3"></div>
+            <div>
+              <strong>Priscila A.</strong>
+              <span>Belo Horizonte, MG</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== INSTAGRAM FEED ===== -->
+  <section class="instagram-feed">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Siga no Instagram</span>
+        <h2 class="section-title"><em>@amina.oficial</em></h2>
+      </div>
+      <div class="instagram-feed__grid">
+        <a href="#" class="insta-item"><div class="insta-img insta-img--1"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+        <a href="#" class="insta-item"><div class="insta-img insta-img--2"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+        <a href="#" class="insta-item"><div class="insta-img insta-img--3"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+        <a href="#" class="insta-item"><div class="insta-img insta-img--4"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+        <a href="#" class="insta-item"><div class="insta-img insta-img--5"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+        <a href="#" class="insta-item"><div class="insta-img insta-img--6"></div><div class="insta-hover"><i class="fa-brands fa-instagram"></i></div></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NEWSLETTER ===== -->
+  <section class="newsletter">
+    <div class="container">
+      <div class="newsletter__inner">
+        <div class="newsletter__text">
+          <span class="eyebrow eyebrow--light">Fique por dentro</span>
+          <h2>Faça parte do <em>reino</em></h2>
+          <p>Receba as novidades em primeira mão, lançamentos exclusivos e ofertas especiais diretamente no seu e-mail.</p>
+        </div>
+        <form class="newsletter__form" id="newsletterForm">
+          <div class="newsletter__input-wrap">
+            <input type="email" placeholder="Seu melhor e-mail" required />
+            <button type="submit" class="btn btn--light">Quero Entrar</button>
+          </div>
+          <span class="newsletter__disclaimer">Sem spam. Cancele quando quiser.</span>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="contato">
+    <div class="container">
+      <div class="footer__top">
+
+        <div class="footer__brand">
+          <img src="assets/images/logo-escuro.png" alt="ÂMINA" class="footer__logo" />
+          <p>Moda gringa para mulheres que não precisam de permissão para reinar.</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            <a href="#" aria-label="Pinterest"><i class="fa-brands fa-pinterest"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          </div>
+        </div>
+
+        <div class="footer__col">
+          <h5>Loja</h5>
+          <ul>
+            <li><a href="#">Novidades</a></li>
+            <li><a href="#">Coleções</a></li>
+            <li><a href="#">Promoções</a></li>
+            <li><a href="#">Lookbook</a></li>
+            <li><a href="#">Tamanhos Especiais</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__col">
+          <h5>Informações</h5>
+          <ul>
+            <li><a href="#">Nossa História</a></li>
+            <li><a href="#">Política de Trocas</a></li>
+            <li><a href="#">Prazo de Entrega</a></li>
+            <li><a href="#">Formas de Pagamento</a></li>
+            <li><a href="#">Política de Privacidade</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__col">
+          <h5>Atendimento</h5>
+          <ul>
+            <li><a href="#"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a></li>
+            <li><a href="#"><i class="fa-regular fa-envelope"></i> contato@amina.com.br</a></li>
+            <li><a href="#"><i class="fa-regular fa-clock"></i> Seg–Sex: 9h–18h</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer__bottom">
+        <p>&copy; 2026 ÂMINA. Todos os direitos reservados.</p>
+        <div class="footer__payments">
+          <i class="fa-brands fa-cc-visa"></i>
+          <i class="fa-brands fa-cc-mastercard"></i>
+          <i class="fa-brands fa-pix"></i>
+          <i class="fa-brands fa-cc-amex"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== CART SIDEBAR ===== -->
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-sidebar__header">
+      <h3>Meu Carrinho</h3>
+      <button id="closeCart"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="cart-sidebar__body" id="cartBody">
+      <div class="cart-empty" id="cartEmpty">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <p>Seu carrinho está vazio</p>
+        <a href="#novidades" class="btn btn--primary" id="cartShopLink">Explorar Produtos</a>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <div class="cart-sidebar__footer" id="cartFooter" style="display:none">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button class="btn btn--primary btn--full">Finalizar Compra</button>
+      <button class="btn btn--ghost btn--full">Continuar Comprando</button>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastMsg">Produto adicionado ao carrinho!</span>
+  </div>
+
+  <!-- ===== BACK TO TOP ===== -->
+  <button class="back-to-top" id="backToTop" aria-label="Voltar ao topo">
+    <i class="fa-solid fa-chevron-up"></i>
+  </button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

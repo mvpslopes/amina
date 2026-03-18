@@ -1,0 +1,20 @@
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+npm-debug.log*
+
+# Arquivos CDR (originais de design, não necessários no repo)
+logo/*.cdr
+
+# Pasta dist (gerada automaticamente)
+dist/
