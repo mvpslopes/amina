@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ÂMINA — Painel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=6" />
+</head>
+<body class="admin-body">
+
+  <div class="admin-sidebar-backdrop" id="sidebarBackdrop" hidden aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Menu principal">
+      <div class="admin-sidebar__brand">
+        <a href="/admin/" class="admin-sidebar__logo-link" title="ÂMINA — Painel">
+          <img src="/assets/images/logo-vinho.png" alt="ÂMINA" class="admin-sidebar__logo" width="180" height="44" />
+        </a>
+        <span class="admin-sidebar__tag">Painel interno</span>
+      </div>
+
+      <nav class="admin-sidebar__nav" id="adminTabs">
+        <button type="button" class="admin-tab" data-tab="dashboard">
+          <i class="fa-solid fa-gauge-high"></i> <span>Dashboard</span>
+        </button>
+        <button type="button" class="admin-tab active" data-tab="products">
+          <i class="fa-solid fa-shirt"></i> <span>Produtos</span>
+        </button>
+        <button type="button" class="admin-tab" data-tab="collections">
+          <i class="fa-solid fa-layer-group"></i> <span>Coleções</span>
+        </button>
+        <button type="button" class="admin-tab" data-tab="users" id="tabUsers" hidden>
+          <i class="fa-solid fa-users"></i> <span>Usuários</span>
+        </button>
+      </nav>
+
+      <div class="admin-sidebar__footer">
+        <p class="admin-sidebar__user" id="userLabel"></p>
+        <a href="/" class="admin-sidebar__link-site" target="_blank" rel="noopener">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver loja
+        </a>
+        <button type="button" class="admin-sidebar__logout" id="btnLogout">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </div>
+    </aside>
+
+    <div class="admin-content">
+      <header class="admin-topbar">
+        <button type="button" class="admin-topbar__menu" id="btnSidebarToggle" aria-label="Abrir menu" aria-expanded="false">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <h1 class="admin-topbar__title" id="pageTitle">Produtos</h1>
+      </header>
+
+      <main class="admin-main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="panel-dashboard" class="admin-panel">
+      <div class="dashboard-welcome">
+        <h2>Bem-vindo, <span id="dashUserName">—</span></h2>
+        <p>Gerencie os produtos, coleções e usuários da loja ÂMINA.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card__icon stat-card__icon--wine"><i class="fa-solid fa-shirt"></i></div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="statProducts">—</span>
+            <span class="stat-card__label">Produtos</span>
+          </div>
+          <button type="button" class="stat-card__action btn btn--ghost btn--sm" data-goto="products">
+            Gerenciar <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon stat-card__icon--gold"><i class="fa-solid fa-layer-group"></i></div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="statCollections">—</span>
+            <span class="stat-card__label">Coleções</span>
+          </div>
+          <button type="button" class="stat-card__action btn btn--ghost btn--sm" data-goto="collections">
+            Gerenciar <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+        <div class="stat-card" id="statUsersCard" hidden>
+          <div class="stat-card__icon stat-card__icon--dark"><i class="fa-solid fa-users"></i></div>
+          <div class="stat-card__body">
+            <span class="stat-card__value" id="statUsers">—</span>
+            <span class="stat-card__label">Usuários</span>
+          </div>
+          <button type="button" class="stat-card__action btn btn--ghost btn--sm" data-goto="users">
+            Gerenciar <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+      <div class="dashboard-charts" id="dashboardCharts">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-pie"></i> Por categoria</h3>
+          <p class="chart-card__hint">Distribuição dos produtos cadastrados</p>
+          <div class="chart-wrap"><canvas id="chartCategories" aria-label="Gráfico por categoria"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-tag"></i> Por badge</h3>
+          <p class="chart-card__hint">Novo, destaque, promoção…</p>
+          <div class="chart-wrap"><canvas id="chartBadges" aria-label="Gráfico por badge"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-layer-group"></i> Por coleção</h3>
+          <p class="chart-card__hint">Quantidade de produtos em cada coleção</p>
+          <div class="chart-wrap"><canvas id="chartCollections" aria-label="Gráfico por coleção"></canvas></div>
+        </div>
+      </div>
+      <p class="dashboard-charts-empty" id="dashboardChartsEmpty" hidden>Nenhum produto ainda — cadastre itens para ver os gráficos.</p>
+
+      <div class="dashboard-quick">
+        <h3>Ações rápidas</h3>
+        <div class="dashboard-quick__btns">
+          <button type="button" class="btn btn--primary" id="dashBtnNewProduct">
+            <i class="fa-solid fa-plus"></i> Novo produto
+          </button>
+          <button type="button" class="btn btn--ghost" id="dashBtnNewCollection">
+            <i class="fa-solid fa-plus"></i> Nova coleção
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PRODUTOS ===== -->
+    <section id="panel-products" class="admin-panel active">
+      <div class="panel-head">
+        <h2><i class="fa-solid fa-shirt"></i> Produtos</h2>
+        <div class="panel-head__actions">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="search" id="productSearch" placeholder="Buscar produto…" class="search-input" />
+          </div>
+          <button type="button" class="btn btn--primary" id="btnNewProduct">
+            <i class="fa-solid fa-plus"></i> Novo produto
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="tableProducts">
+          <thead>
+            <tr>
+              <th class="th-code" title="ID automático no banco">Cód.</th>
+              <th class="th-thumb"></th>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Categoria</th>
+              <th>Badge</th>
+              <th>Coleções</th>
+              <th class="th-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyProducts"></tbody>
+        </table>
+        <div class="empty-state" id="emptyProducts" hidden>
+          <i class="fa-solid fa-shirt empty-state__icon"></i>
+          <p>Nenhum produto cadastrado ainda.</p>
+          <button type="button" class="btn btn--primary" id="emptyBtnProduct">
+            <i class="fa-solid fa-plus"></i> Adicionar primeiro produto
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COLEÇÕES ===== -->
+    <section id="panel-collections" class="admin-panel">
+      <div class="panel-head">
+        <h2><i class="fa-solid fa-layer-group"></i> Coleções</h2>
+        <button type="button" class="btn btn--primary" id="btnNewCollection">
+          <i class="fa-solid fa-plus"></i> Nova coleção
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="th-thumb"></th>
+              <th>Nome</th>
+              <th>Slug</th>
+              <th>Produtos</th>
+              <th class="th-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCollections"></tbody>
+        </table>
+        <div class="empty-state" id="emptyCollections" hidden>
+          <i class="fa-solid fa-layer-group empty-state__icon"></i>
+          <p>Nenhuma coleção cadastrada ainda.</p>
+          <button type="button" class="btn btn--primary" id="emptyBtnCollection">
+            <i class="fa-solid fa-plus"></i> Criar primeira coleção
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== USUÁRIOS (root) ===== -->
+    <section id="panel-users" class="admin-panel">
+      <div class="panel-head">
+        <h2><i class="fa-solid fa-users"></i> Usuários</h2>
+        <p class="panel-hint">Apenas Root pode criar administradores.</p>
+      </div>
+      <div class="card card--form">
+        <h3><i class="fa-solid fa-user-plus"></i> Novo administrador</h3>
+        <form id="createUserForm" class="grid-form">
+          <label>
+            <span>Usuário</span>
+            <input type="text" name="username" required minlength="2" autocomplete="off" />
+          </label>
+          <label>
+            <span>Senha</span>
+            <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary">
+              <i class="fa-solid fa-user-plus"></i> Criar
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Perfil</th>
+              <th>Criado em</th>
+              <th>Criado por</th>
+              <th class="th-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyUsers"></tbody>
+        </table>
+      </div>
+    </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== MODAL PRODUTO ===== -->
+  <div class="modal" id="modalProduct" aria-hidden="true" role="dialog" aria-labelledby="modalProductTitle">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__box modal__box--wide">
+      <div class="modal__header">
+        <h3 id="modalProductTitle">Produto</h3>
+        <button type="button" class="modal__close" data-close aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="formProduct">
+        <input type="hidden" name="id" />
+        <p class="form-hint form-hint--code" id="productCodeHint" hidden>
+          <i class="fa-solid fa-hashtag"></i> <strong>Código:</strong> <span id="productCodeValue">—</span>
+          <span class="form-hint__sub">identificador único (automático)</span>
+        </p>
+        <p class="form-hint form-hint--muted" id="productNewIdNote">
+          <i class="fa-solid fa-circle-info"></i> O <strong>código do produto</strong> é um número sequencial gerado pelo banco ao salvar — você não precisa informar.
+        </p>
+        <div class="modal__cols">
+          <!-- Coluna principal -->
+          <div class="modal__col modal__col--main">
+            <label>
+              <span>Nome *</span>
+              <input type="text" name="name" required placeholder="Ex.: Cropped Cris Poliamida" />
+            </label>
+            <div class="form-row-2">
+              <label>
+                <span>Preço (R$) *</span>
+                <input type="number" name="price" step="0.01" min="0" required placeholder="0,00" />
+              </label>
+              <label>
+                <span>Badge</span>
+                <select name="badge" class="select-field">
+                  <option value="">Nenhum</option>
+                  <option value="Novo">Novo</option>
+                  <option value="Destaque">Destaque</option>
+                  <option value="Promoção">Promoção</option>
+                  <option value="Exclusivo">Exclusivo</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>Categoria</span>
+              <input type="text" name="category" placeholder="tops, calças, vestidos…" list="categoryList" />
+              <datalist id="categoryList">
+                <option value="tops">
+                <option value="calças">
+                <option value="vestidos">
+                <option value="bodies">
+                <option value="saias">
+                <option value="acessórios">
+              </datalist>
+            </label>
+            <label>
+              <span>Descrição</span>
+              <textarea name="description" rows="3" placeholder="Descreva o produto…"></textarea>
+            </label>
+            <fieldset class="fieldset-cols">
+              <legend>Coleções</legend>
+              <div id="productCollectionChecks" class="checkbox-list"></div>
+            </fieldset>
+          </div>
+          <!-- Coluna mídia -->
+          <div class="modal__col modal__col--media">
+            <div class="image-preview-wrap" id="productImgPreviewWrap">
+              <img id="productImgPreview" src="" alt="Pré-visualização" hidden />
+              <div class="image-preview-placeholder" id="productImgPlaceholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Sem imagem</span>
+              </div>
+            </div>
+            <label>
+              <span>URL da imagem</span>
+              <input type="url" name="image_url" id="productImageUrl" placeholder="https://…" />
+            </label>
+            <div class="upload-row">
+              <label class="upload-label">
+                <span>Ou enviar arquivo</span>
+                <input type="file" id="productFile" accept="image/jpeg,image/png,image/webp,image/gif" />
+              </label>
+              <span class="upload-status" id="productUploadStatus"></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn--primary">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar produto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL COLEÇÃO ===== -->
+  <div class="modal" id="modalCollection" aria-hidden="true" role="dialog" aria-labelledby="modalCollectionTitle">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__box modal__box--wide">
+      <div class="modal__header">
+        <h3 id="modalCollectionTitle">Coleção</h3>
+        <button type="button" class="modal__close" data-close aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="formCollection">
+        <input type="hidden" name="id" />
+        <div class="modal__cols">
+          <div class="modal__col modal__col--main">
+            <label>
+              <span>Nome *</span>
+              <input type="text" name="name" required placeholder="Ex.: Verão 2026" />
+            </label>
+            <label>
+              <span>Descrição</span>
+              <textarea name="description" rows="4" placeholder="Descreva a coleção…"></textarea>
+            </label>
+          </div>
+          <div class="modal__col modal__col--media">
+            <div class="image-preview-wrap" id="collectionImgPreviewWrap">
+              <img id="collectionImgPreview" src="" alt="Capa da coleção" hidden />
+              <div class="image-preview-placeholder" id="collectionImgPlaceholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Sem imagem</span>
+              </div>
+            </div>
+            <label>
+              <span>URL da imagem (capa)</span>
+              <input type="url" name="image_url" id="collectionImageUrl" placeholder="https://…" />
+            </label>
+            <div class="upload-row">
+              <label class="upload-label">
+                <span>Ou enviar arquivo</span>
+                <input type="file" id="collectionFile" accept="image/jpeg,image/png,image/webp,image/gif" />
+              </label>
+              <span class="upload-status" id="collectionUploadStatus"></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn--primary">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar coleção
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="/admin/js/config.js"></script>
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>

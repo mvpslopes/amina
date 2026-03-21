@@ -181,17 +181,187 @@ window.changeQty = function(id, delta) {
   updateCart();
 };
 
-// Add to cart buttons
-document.querySelectorAll('.btn-add-cart').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const name = btn.dataset.name;
-    const price = btn.dataset.price;
-    addToCart(name, price);
-  });
-});
+/* ===== PRODUCTS — API ===== */
+const productsLoading = document.getElementById('productsLoading');
+const productsEmpty   = document.getElementById('productsEmpty');
+const filterWrap      = document.querySelector('.products__filters');
 
-/* ===== WISHLIST ===== */
+function bindProductCard(card) {
+  const addBtn = card.querySelector('.btn-add-cart');
+  if (addBtn) {
+    addBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      addToCart(addBtn.dataset.name, addBtn.dataset.price);
+    });
+  }
+  const wishBtn = card.querySelector('.product-card__wish');
+  if (wishBtn) {
+    wishBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      wishBtn.classList.toggle('active');
+      const icon = wishBtn.querySelector('i');
+      if (wishBtn.classList.contains('active')) {
+        icon.classList.replace('fa-regular', 'fa-solid');
+        icon.style.color = '#e53e3e';
+        showToast('Adicionado aos favoritos!');
+      } else {
+        icon.classList.replace('fa-solid', 'fa-regular');
+        icon.style.color = '';
+      }
+    });
+  }
+}
+
+/** Chave de filtro estável (ex.: "vestido" → "vestidos"). */
+function normalizeCategoryKey(raw) {
+  const c = String(raw || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+  if (c === 'vestido') return 'vestidos';
+  if (c === 'calca' || c === 'calças') return 'calças';
+  return c;
+}
+
+function buildProductCard(p) {
+  const price = Number(p.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const cat   = normalizeCategoryKey(p.category);
+  const img   = p.image_url
+    ? `<img src="${p.image_url}" alt="${p.name}" class="product-card__img product-card__img--real" loading="lazy" />`
+    : `<div class="product-card__img product-card__img--placeholder"></div>`;
+  const badge = p.badge
+    ? `<span class="product-card__badge">${p.badge}</span>`
+    : '';
+  const catLabel = p.category || '';
+
+  const div = document.createElement('div');
+  div.className = 'product-card product-card--catalog';
+  div.dataset.category = cat;
+  /* Catálogo da API: visível de imediato (evita opacity:0 se o IntersectionObserver não disparar). */
+  div.innerHTML = `
+    <div class="product-card__media">
+      ${img}
+      <div class="product-card__overlay">
+        <button class="btn-add-cart" data-name="${p.name}" data-price="${p.price}">
+          <i class="fa-solid fa-bag-shopping"></i> Adicionar
+        </button>
+      </div>
+      <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+      ${badge}
+    </div>
+    <div class="product-card__info">
+      ${catLabel ? `<span class="product-card__category">${catLabel}</span>` : ''}
+      <h4 class="product-card__name">${p.name}</h4>
+      <div class="product-card__price">
+        <span class="price-current">${price}</span>
+      </div>
+    </div>`;
+  bindProductCard(div);
+  return div;
+}
+
+function rebuildFilters(products) {
+  const cats = [...new Set(products.map((p) => normalizeCategoryKey(p.category)).filter(Boolean))];
+  const labels = {
+    tops: 'Tops & Bodies',
+    calças: 'Calças',
+    vestidos: 'Vestidos & Saias',
+    vestido: 'Vestidos & Saias',
+    saias: 'Saias',
+    bodies: 'Bodies',
+    acessórios: 'Acessórios',
+  };
+  const btns = filterWrap ? filterWrap.querySelectorAll('.filter-btn:not([data-filter="todos"])') : [];
+  btns.forEach(b => b.remove());
+  cats.forEach(cat => {
+    if (!filterWrap) return;
+    const b = document.createElement('button');
+    b.className = 'filter-btn';
+    b.dataset.filter = cat;
+    b.textContent = labels[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1));
+    filterWrap.appendChild(b);
+    b.addEventListener('click', () => applyFilter(cat, b));
+  });
+}
+
+function applyFilter(filter, activeBtn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === activeBtn || (filter === 'todos' && b.dataset.filter === 'todos')));
+  productsGrid.querySelectorAll('.product-card').forEach(card => {
+    const show = filter === 'todos' || card.dataset.category === filter;
+    card.style.display = show ? 'flex' : 'none';
+    if (show) card.style.animation = 'fadeIn 0.35s ease forwards';
+  });
+}
+
+function setProductsEmptyMessage(html, showFilters) {
+  if (!productsEmpty) return;
+  const p = productsEmpty.querySelector('p');
+  if (p) p.innerHTML = html;
+  productsEmpty.hidden = false;
+  if (filterWrap) filterWrap.style.display = showFilters ? '' : 'none';
+}
+
+async function loadProductsFromAPI() {
+  if (productsLoading) productsLoading.hidden = false;
+  if (productsEmpty)   productsEmpty.hidden   = true;
+  productsGrid.innerHTML = '';
+  if (window.location.protocol === 'file:') {
+    if (productsLoading) productsLoading.hidden = true;
+    setProductsEmptyMessage(
+      'O catálogo precisa de um <strong>servidor</strong> (a API não abre com o ficheiro em disco).<br>' +
+        'No projeto, execute <code>npm start</code> e abra <code>http://localhost:3000/</code>, ' +
+        'ou use o site já publicado no teu domínio com a pasta <code>api/</code>.',
+      false
+    );
+    return;
+  }
+  try {
+    const url =
+      typeof window.aminaApiUrl === 'function'
+        ? window.aminaApiUrl('/api/public/products')
+        : (String(window.AMINA_API_BASE || '').replace(/\/$/, '') + '/api/public/products');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const products = await res.json();
+    if (productsLoading) productsLoading.hidden = true;
+    if (!Array.isArray(products) || products.length === 0) {
+      setProductsEmptyMessage(
+        'Em breve novidades incríveis por aqui. <br>Fique de olho!',
+        false
+      );
+      return;
+    }
+    if (productsEmpty) {
+      const p = productsEmpty.querySelector('p');
+      if (p) p.innerHTML = 'Em breve novidades incríveis por aqui. <br>Fique de olho!';
+    }
+    if (productsEmpty) productsEmpty.hidden = true;
+    if (filterWrap) filterWrap.style.display = '';
+    rebuildFilters(products);
+    const allBtn = filterWrap ? filterWrap.querySelector('[data-filter="todos"]') : null;
+    if (allBtn) {
+      allBtn.addEventListener('click', () => applyFilter('todos', allBtn));
+    }
+    products.forEach((p) => {
+      const card = buildProductCard(p);
+      productsGrid.appendChild(card);
+    });
+    if (allBtn) applyFilter('todos', allBtn);
+  } catch (e) {
+    if (productsLoading) productsLoading.hidden = true;
+    console.warn('ÂMINA: falha ao carregar /api/public/products', e);
+    setProductsEmptyMessage(
+      'Não foi possível carregar o catálogo. Confirme que a <strong>API</strong> está no ar ' +
+        '(pasta <code>api/</code> no mesmo site ou <code>npm start</code> em desenvolvimento).<br>' +
+        '<small>Se o site estiver numa subpasta, o ficheiro <code>js/config.js</code> já ajusta o caminho; ' +
+        'em casos especiais defina <code>window.AMINA_API_BASE</code> antes do config.</small>',
+      false
+    );
+  }
+}
+
+/* ===== WISHLIST & FILTERS (legado — para cards estáticos, se houver) ===== */
 document.querySelectorAll('.product-card__wish').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -208,25 +378,11 @@ document.querySelectorAll('.product-card__wish').forEach(btn => {
   });
 });
 
-/* ===== PRODUCT FILTERS ===== */
-filterBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    filterBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    const filter = btn.dataset.filter;
-    const cards = productsGrid.querySelectorAll('.product-card');
-
-    cards.forEach(card => {
-      if (filter === 'todos' || card.dataset.category === filter) {
-        card.style.display = 'flex';
-        card.style.animation = 'fadeIn 0.35s ease forwards';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  });
-});
+// Filtro "Todos" estático
+const allFilterBtn = filterWrap ? filterWrap.querySelector('[data-filter="todos"]') : null;
+if (allFilterBtn) {
+  allFilterBtn.addEventListener('click', () => applyFilter('todos', allFilterBtn));
+}
 
 /* ===== TOAST ===== */
 let toastTimer;
@@ -296,6 +452,9 @@ document.head.insertAdjacentHTML('beforeend', `
       opacity: 1 !important;
       transform: translateY(0) !important;
     }
+    #productsGrid .product-card--catalog {
+      animation: fadeIn 0.45s ease forwards;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -305,3 +464,4 @@ document.head.insertAdjacentHTML('beforeend', `
 
 /* ===== INIT ===== */
 updateCart();
+loadProductsFromAPI();

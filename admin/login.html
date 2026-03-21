@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ÂMINA — Acesso interno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/css/admin.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <img src="/assets/images/logo-vinho.png" alt="ÂMINA" class="login-brand__logo" width="200" height="48" />
+      <h1>Painel interno</h1>
+      <p>Entre com suas credenciais</p>
+    </div>
+    <form id="loginForm" class="login-form">
+      <label>
+        <span>Usuário</span>
+        <input type="text" name="username" autocomplete="username" required />
+      </label>
+      <label>
+        <span>Senha</span>
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <p class="login-error" id="loginError" hidden></p>
+      <button type="submit" class="btn btn--primary btn--block">Entrar</button>
+    </form>
+    <a class="login-back" href="/">← Voltar ao site</a>
+  </div>
+  <script src="/admin/js/config.js"></script>
+  <script src="/admin/js/login.js"></script>
+</body>
+</html>

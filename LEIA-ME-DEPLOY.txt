@@ -1,0 +1,67 @@
+================================================================================
+  ÂMINA — Deploy na Hostinger (PHP + MySQL)
+================================================================================
+
+1) Envie a pasta dist/ inteira para public_html (ou compacte e descompacte lá).
+
+   Senha MySQL: mantenha em  api/config.local.php  no seu PC (cópia de config.example.php).
+   Esse ficheiro está no .gitignore. Depois rode  npm run build  — a dist usa essa cópia.
+
+   Se antes só editou dist/api/config.local.php: na PRÓXIMA vez que rodar o build, o script
+   copia automaticamente dist → api/config.local.php ANTES de apagar a dist, para não perder a senha.
+
+   Cuidado: o zip da dist contém credenciais — não partilhe em repositórios públicos.
+
+2) Abra e edite:  public_html/api/config.local.php
+   (Se subiu dist/ já com o seu config.local.php do PC, confira se a senha está certa.)
+
+   - Em 'pass' coloque a SENHA REAL do MySQL (hPanel → Bancos de dados).
+     NÃO deixe o texto de exemplo 'SUA_SENHA_MYSQL' — com isso a conexão sempre falha.
+   - Se a senha tiver # ou aspas, use aspas DUPLAS no PHP:
+       'pass' => "sua#senha",
+   - Confira 'name' e 'user' COMPLETOS com prefixo (ex.: u179630068_amina_bd).
+   - Se ainda falhar conexão: em 'host' tente '127.0.0.1' OU 'localhost' (o build já tenta os dois).
+   - No hPanel, copie o "Nome do host MySQL" se for diferente de localhost.
+   - Troque 'jwt_secret' por uma frase longa (mínimo 16 caracteres).
+
+3) Crie a pasta public_html/uploads com permissão de escrita (755 ou 775).
+
+4) No phpMyAdmin, se ainda não rodou: sql/mysql-schema.sql e sql/seed-root-user.sql
+
+5) Teste: https://SEU-DOMINIO/api/public/products
+   Deve aparecer [] ou uma lista JSON — não erro 500.
+
+Login do painel: /admin/login.html
+
+--------------------------------------------------------------------------------
+  Ainda "Falha na conexão com o banco" (erro 500 no login)?
+--------------------------------------------------------------------------------
+
+  a) Confirme no hPanel o nome EXATO do banco, usuário e senha (copiar/colar).
+
+  b) Diagnóstico com erro real do MySQL (apague depois):
+     - Em config.local.php adicione:
+         'db_diagnostic_key' => 'uma-frase-secreta-longa-123',
+     - Envie api/test-db-connection.php e api/lib/PdoMysql.php (npm run build → dist).
+     - Abra no navegador:
+         https://SEU-DOMINIO/api/test-db-connection.php?key=uma-frase-secreta-longa-123
+     - Leia "last_error": Access denied = senha/usuário; Unknown database = nome do banco.
+     - Remova db_diagnostic_key e DELETE o arquivo test-db-connection.php no servidor.
+
+  c) Alternativa rápida: em config.local.php ponha temporariamente:
+        'expose_mysql_error' => true,
+     Tente login de novo e abra DevTools → Rede → POST .../api/auth/login → Resposta.
+     Copie o texto [DEBUG PDO] ... (Access denied / Unknown database / etc.).
+     Volte 'expose_mysql_error' => false depois.
+
+  d) No hPanel, em MySQL: o utilizador tem de estar LIGADO ao banco (permissões).
+     Se criou utilizador e banco separados sem associar, a conexão falha.
+
+  e) Diagnóstico sem editar PHP:
+     - Envie api/env-check.php para o servidor.
+     - No Gestor de ficheiros, crie um ficheiro VAZIO: public_html/api/db-debug.flag
+     - Abra no browser: https://SEU-DOMINIO/api/env-check.php
+     - Veja "db.last_error" e "db.per_host_errors" → copie para suporte.
+     - APAGUE db-debug.flag em seguida.
+
+================================================================================

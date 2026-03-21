@@ -32,8 +32,7 @@
       </button>
 
       <a href="index.html" class="header__logo">
-        <img src="assets/images/logo-vinho.png" alt="ÂMINA" class="logo-light" />
-        <img src="assets/images/logo-preto.png" alt="ÂMINA" class="logo-dark" />
+        <img src="assets/images/logo-vinho.png" alt="ÂMINA" class="header__logo-img" />
       </a>
 
       <nav class="header__nav" id="headerNav">
@@ -45,6 +44,10 @@
       </nav>
 
       <div class="header__actions">
+        <a href="admin/login.html" class="header__internal-btn" title="Área interna — painel">
+          <i class="fa-solid fa-lock" aria-hidden="true"></i>
+          <span class="header__internal-btn-text">Área interna</span>
+        </a>
         <button class="btn-icon" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
         <button class="btn-icon" aria-label="Favoritos"><i class="fa-regular fa-heart"></i></button>
         <button class="btn-icon cart-btn" id="cartBtn" aria-label="Carrinho">
@@ -65,6 +68,7 @@
       <a href="#lookbook" class="mobile-link">Lookbook</a>
       <a href="#sobre" class="mobile-link">Nossa História</a>
       <a href="#contato" class="mobile-link">Contato</a>
+      <a href="admin/login.html" class="mobile-link mobile-link--internal">Área interna</a>
     </nav>
     <div class="mobile-menu__footer">
       <a href="#"><i class="fa-brands fa-instagram"></i></a>
@@ -241,105 +245,18 @@
       </div>
 
       <div class="products__grid" id="productsGrid">
+        <!-- produtos carregados via API em js/main.js -->
+      </div>
 
-        <div class="product-card" data-category="tops">
-          <div class="product-card__media">
-            <img src="assets/images/produtos/produto-1.png" alt="Cropped Cris Poliamida Preto" class="product-card__img product-card__img--real" loading="lazy" />
-            <div class="product-card__overlay">
-              <button class="btn-add-cart" data-name="Cropped Cris Poliamida Preto" data-price="33">
-                <i class="fa-solid fa-bag-shopping"></i> Adicionar
-              </button>
-            </div>
-            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
-            <span class="product-card__badge">Novo</span>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__category">Tops & Blusas</span>
-            <h4 class="product-card__name">Cropped Cris Poliamida</h4>
-            <div class="product-card__price">
-              <span class="price-current">R$ 33,00</span>
-            </div>
-          </div>
-        </div>
+      <div class="products__empty" id="productsEmpty" hidden>
+        <p>Em breve novidades incríveis por aqui. <br>Fique de olho!</p>
+      </div>
 
-        <div class="product-card" data-category="tops">
-          <div class="product-card__media">
-            <img src="assets/images/produtos/produto-2.png" alt="Cropped Triz Poliamida Marrom" class="product-card__img product-card__img--real" loading="lazy" />
-            <div class="product-card__overlay">
-              <button class="btn-add-cart" data-name="Cropped Triz Poliamida Marrom" data-price="30">
-                <i class="fa-solid fa-bag-shopping"></i> Adicionar
-              </button>
-            </div>
-            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__category">Tops & Blusas</span>
-            <h4 class="product-card__name">Cropped Triz Poliamida</h4>
-            <div class="product-card__price">
-              <span class="price-current">R$ 30,00</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card" data-category="tops">
-          <div class="product-card__media">
-            <img src="assets/images/produtos/produto-3.png" alt="Body Kika Poliamida Marrom" class="product-card__img product-card__img--real" loading="lazy" />
-            <div class="product-card__overlay">
-              <button class="btn-add-cart" data-name="Body Kika Poliamida Marrom" data-price="35">
-                <i class="fa-solid fa-bag-shopping"></i> Adicionar
-              </button>
-            </div>
-            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
-            <span class="product-card__badge">Destaque</span>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__category">Tops & Blusas</span>
-            <h4 class="product-card__name">Body Kika Poliamida</h4>
-            <div class="product-card__price">
-              <span class="price-current">R$ 35,00</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card" data-category="calças">
-          <div class="product-card__media">
-            <img src="assets/images/produtos/produto-4.png" alt="Calça Britney Poliamida Marinho" class="product-card__img product-card__img--real" loading="lazy" />
-            <div class="product-card__overlay">
-              <button class="btn-add-cart" data-name="Calça Britney Poliamida Marinho" data-price="43">
-                <i class="fa-solid fa-bag-shopping"></i> Adicionar
-              </button>
-            </div>
-            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__category">Calças</span>
-            <h4 class="product-card__name">Calça Britney Poliamida</h4>
-            <div class="product-card__price">
-              <span class="price-current">R$ 43,00</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card" data-category="vestidos">
-          <div class="product-card__media">
-            <img src="assets/images/produtos/produto-5.png" alt="Saia Skylar Poliamida Rosa Bebê" class="product-card__img product-card__img--real" loading="lazy" />
-            <div class="product-card__overlay">
-              <button class="btn-add-cart" data-name="Saia Skylar Poliamida Rosa Bebê" data-price="38">
-                <i class="fa-solid fa-bag-shopping"></i> Adicionar
-              </button>
-            </div>
-            <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
-            <span class="product-card__badge">Novo</span>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__category">Vestidos & Saias</span>
-            <h4 class="product-card__name">Saia Skylar Poliamida</h4>
-            <div class="product-card__price">
-              <span class="price-current">R$ 38,00</span>
-            </div>
-          </div>
-        </div>
-
+      <div class="products__loading" id="productsLoading" aria-label="Carregando produtos">
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
       </div>
     </div>
   </section>
@@ -505,7 +422,7 @@
       <div class="footer__top">
 
         <div class="footer__brand">
-          <img src="assets/images/logo-escuro.png" alt="ÂMINA" class="footer__logo" />
+          <img src="assets/images/logo-amina-3.png" alt="ÂMINA" class="footer__logo" width="180" height="48" />
           <p>Moda gringa para mulheres que não precisam de permissão para reinar.</p>
           <div class="footer__social">
             <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
@@ -595,6 +512,7 @@
     <i class="fa-solid fa-chevron-up"></i>
   </button>
 
+  <script src="js/config.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

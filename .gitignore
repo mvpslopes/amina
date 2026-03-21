@@ -18,3 +18,14 @@ logo/*.cdr
 
 # Pasta dist (gerada automaticamente)
 dist/
+.amina-dist-staging/
+
+# Node / painel interno
+node_modules/
+.env
+data/
+uploads/
+
+# API PHP (credenciais)
+api/config.local.php
+api/db-debug.flag
