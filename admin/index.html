@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="/admin/css/admin.css?v=10" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=13" />
   <script>
     /* Sair: precisa funcionar antes do admin.js e com path /admin ou /admin/index.html */
     (function () {
@@ -337,24 +337,31 @@
           </div>
           <!-- Coluna mídia -->
           <div class="modal__col modal__col--media">
-            <div class="image-preview-wrap" id="productImgPreviewWrap">
-              <img id="productImgPreview" src="" alt="Pré-visualização" hidden />
-              <div class="image-preview-placeholder" id="productImgPlaceholder">
-                <i class="fa-regular fa-image"></i>
-                <span>Sem imagem</span>
-              </div>
+            <p class="modal__hint">Galeria — até <strong>5 fotos</strong> por produto (transição na loja; detalhe com miniaturas).</p>
+            <p class="product-gallery-count" id="productGalleryCount" aria-live="polite">0 / 5 fotos</p>
+            <ul class="product-gallery-editor" id="productGalleryList" aria-label="Fotos do produto"></ul>
+            <div class="product-gallery-editor__add">
+              <label>
+                <span>Adicionar por URL</span>
+                <input type="text" id="productGalleryUrlInput" inputmode="url" autocomplete="off" placeholder="https://… ou /uploads/nome.jpg" />
+              </label>
+              <button type="button" class="btn btn--ghost btn--sm" id="productGalleryAddUrl">
+                <i class="fa-solid fa-plus"></i> Incluir URL
+              </button>
             </div>
-            <label>
-              <span>URL da imagem</span>
-              <input type="url" name="image_url" id="productImageUrl" placeholder="https://…" />
-            </label>
-            <div class="upload-row editor-only">
-              <label class="upload-label">
-                <span>Ou enviar arquivo</span>
-                <input type="file" id="productFile" accept="image/jpeg,image/png,image/webp,image/gif" />
+            <div class="upload-row upload-row--gallery editor-only">
+              <!-- Input cobre o botão (toque real no file input) — necessário no Safari iOS / Chrome Android -->
+              <label class="product-file-picker">
+                <input type="file" id="productFile" class="product-file-picker__input" accept="image/*" />
+                <span class="product-file-picker__face btn btn--ghost btn--block">
+                  <i class="fa-solid fa-images" aria-hidden="true"></i>
+                  <span class="product-file-picker__title">Adicionar foto</span>
+                  <span class="product-file-picker__sub">Toque de novo para outra (máx. 5)</span>
+                </span>
               </label>
               <span class="upload-status" id="productUploadStatus"></span>
             </div>
+            <input type="hidden" name="image_url" id="productImageUrl" value="" />
           </div>
         </div>
         <div class="modal__actions">

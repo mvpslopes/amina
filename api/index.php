@@ -90,7 +90,7 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
         if (!$row) {
             json_out(404, ['error' => 'Produto não encontrado']);
         }
-        json_out(200, $attachCols($row));
+        json_out(200, attach_product_images_pdo($pdo, [$attachCols($row)])[0]);
     }
 
     $rows = $pdo->query('SELECT * FROM products ORDER BY created_at DESC')->fetchAll();
@@ -98,7 +98,7 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
     foreach ($rows as $p) {
         $out[] = $attachCols($p);
     }
-    json_out(200, $out);
+    json_out(200, attach_product_images_pdo($pdo, $out));
 }
 
 if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '') === 'collections') {
@@ -363,7 +363,7 @@ function set_product_collections(PDO $pdo, int $productId, ?array $collectionIds
 if (($segments[0] ?? '') === 'products') {
     if ($method === 'GET' && count($segments) === 1) {
         $rows = $pdo->query('SELECT * FROM products ORDER BY created_at DESC')->fetchAll();
-        json_out(200, attach_collections_pdo($pdo, $rows));
+        json_out(200, attach_product_images_pdo($pdo, attach_collections_pdo($pdo, $rows)));
     }
     if ($method === 'GET' && isset($segments[1]) && ctype_digit($segments[1])) {
         $id = (int) $segments[1];
@@ -373,7 +373,7 @@ if (($segments[0] ?? '') === 'products') {
         if (!$row) {
             json_out(404, ['error' => 'Produto não encontrado']);
         }
-        $out = attach_collections_pdo($pdo, [$row]);
+        $out = attach_product_images_pdo($pdo, attach_collections_pdo($pdo, [$row]));
         json_out(200, $out[0]);
     }
     if ($method === 'POST' && count($segments) === 1) {
@@ -389,6 +389,16 @@ if (($segments[0] ?? '') === 'products') {
         }
         $slug = Slug::unique($pdo, 'products', $name);
         $now = now_sql();
+        $imgForRow = $body['image_url'] ?? null;
+        if (!empty($body['images']) && is_array($body['images'])) {
+            foreach ($body['images'] as $u) {
+                $u = trim((string) $u);
+                if ($u !== '') {
+                    $imgForRow = $u;
+                    break;
+                }
+            }
+        }
         $st = $pdo->prepare(
             'INSERT INTO products (name, slug, description, price, image_url, category, badge, created_at, updated_at)
              VALUES (?,?,?,?,?,?,?,?,?)'
@@ -398,7 +408,7 @@ if (($segments[0] ?? '') === 'products') {
             $slug,
             $body['description'] ?? null,
             $price,
-            $body['image_url'] ?? null,
+            $imgForRow,
             $body['category'] ?? null,
             $body['badge'] ?? null,
             $now,
@@ -406,9 +416,16 @@ if (($segments[0] ?? '') === 'products') {
         ]);
         $newId = (int) $pdo->lastInsertId();
         set_product_collections($pdo, $newId, $body['collection_ids'] ?? null);
+        if (!empty($body['images']) && is_array($body['images'])) {
+            set_product_images($pdo, $newId, $body['images']);
+        } elseif ($imgForRow) {
+            set_product_images($pdo, $newId, [$imgForRow]);
+        } else {
+            set_product_images($pdo, $newId, []);
+        }
         $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
         $st->execute([$newId]);
-        $out = attach_collections_pdo($pdo, [$st->fetch()]);
+        $out = attach_product_images_pdo($pdo, attach_collections_pdo($pdo, [$st->fetch()]));
         json_out(201, $out[0]);
     }
     if ($method === 'PUT' && isset($segments[1]) && ctype_digit($segments[1])) {
@@ -436,6 +453,21 @@ if (($segments[0] ?? '') === 'products') {
         $img = array_key_exists('image_url', $body)
             ? ($body['image_url'] === null ? null : (string) $body['image_url'])
             : $existing['image_url'];
+        if (array_key_exists('images', $body)) {
+            $arr = is_array($body['images']) ? $body['images'] : [];
+            set_product_images($pdo, $id, $arr);
+            $first = null;
+            foreach ($arr as $u) {
+                $u = trim((string) $u);
+                if ($u !== '') {
+                    $first = $u;
+                    break;
+                }
+            }
+            $img = $first;
+        } elseif (array_key_exists('image_url', $body)) {
+            set_product_images($pdo, $id, $img ? [$img] : []);
+        }
         $cat = array_key_exists('category', $body)
             ? ($body['category'] === null ? null : (string) $body['category'])
             : $existing['category'];
@@ -451,7 +483,7 @@ if (($segments[0] ?? '') === 'products') {
         }
         $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
         $st->execute([$id]);
-        $out = attach_collections_pdo($pdo, [$st->fetch()]);
+        $out = attach_product_images_pdo($pdo, attach_collections_pdo($pdo, [$st->fetch()]));
         json_out(200, $out[0]);
     }
     if ($method === 'DELETE' && isset($segments[1]) && ctype_digit($segments[1])) {

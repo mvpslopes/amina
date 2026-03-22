@@ -2,6 +2,7 @@
 
 const express = require('express');
 const db = require('../db');
+const { attachProductImages, setProductImages } = require('../lib/productImages');
 const { authMiddleware, requireEditor } = require('../middleware/auth');
 const { uniqueSlug } = require('../utils/slug');
 
@@ -29,17 +30,21 @@ async function attachCollections(productRows) {
   });
 }
 
+async function attachCollectionsAndImages(productRows) {
+  return attachProductImages(await attachCollections(productRows));
+}
+
 router.get('/', async (_req, res) => {
   const rows = await db.all('SELECT * FROM products ORDER BY created_at DESC');
-  res.json(await attachCollections(rows));
+  res.json(await attachCollectionsAndImages(rows));
 });
 
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   const row = await db.get('SELECT * FROM products WHERE id = ?', [id]);
   if (!row) return res.status(404).json({ error: 'Produto não encontrado' });
-  const [withCols] = await attachCollections([row]);
-  res.json(withCols);
+  const [out] = await attachCollectionsAndImages([row]);
+  res.json(out);
 });
 
 async function setProductCollections(productId, collectionIds) {
@@ -62,7 +67,7 @@ async function setProductCollections(productId, collectionIds) {
 }
 
 router.post('/', requireEditor, async (req, res) => {
-  const { name, description, price, image_url, category, collection_ids } = req.body || {};
+  const { name, description, price, image_url, category, collection_ids, images } = req.body || {};
   if (!name || String(name).trim().length === 0) {
     return res.status(400).json({ error: 'Nome é obrigatório' });
   }
@@ -74,6 +79,12 @@ router.post('/', requireEditor, async (req, res) => {
   const slug = await uniqueSlug('products', name);
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+  let mainImage = image_url != null && String(image_url).trim() ? String(image_url) : null;
+  if (Array.isArray(images) && images.length > 0) {
+    const first = images.map((s) => String(s || '').trim()).find(Boolean);
+    if (first) mainImage = first;
+  }
+
   const info = await db.run(
     `INSERT INTO products (name, slug, description, price, image_url, category, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -82,27 +93,45 @@ router.post('/', requireEditor, async (req, res) => {
       slug,
       description != null ? String(description) : null,
       p,
-      image_url != null ? String(image_url) : null,
+      mainImage,
       category != null ? String(category) : null,
       now,
       now,
     ]
   );
 
-  const id = info.insertId;
+  const id = Number(info.insertId);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(500).json({ error: 'Falha ao obter ID do produto criado' });
+  }
   await setProductCollections(id, collection_ids);
 
+  try {
+    if (Array.isArray(images) && images.length > 0) {
+      await setProductImages(id, images);
+    } else if (mainImage) {
+      await setProductImages(id, [mainImage]);
+    }
+  } catch (e) {
+    console.error('[products] POST setProductImages', e);
+    return res.status(500).json({
+      error:
+        'Não foi possível guardar as fotos da galeria. No MySQL, execute o script sql/migration-product-images.sql (tabela product_images).',
+    });
+  }
+
   const row = await db.get('SELECT * FROM products WHERE id = ?', [id]);
-  const [out] = await attachCollections([row]);
+  const [out] = await attachCollectionsAndImages([row]);
   res.status(201).json(out);
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEditor, async (req, res) => {
   const id = Number(req.params.id);
   const existing = await db.get('SELECT * FROM products WHERE id = ?', [id]);
   if (!existing) return res.status(404).json({ error: 'Produto não encontrado' });
 
-  const { name, description, price, image_url, category, collection_ids } = req.body || {};
+  const body = req.body || {};
+  const { name, description, price, image_url, category, collection_ids, images } = body;
 
   let slug = existing.slug;
   if (name != null && String(name).trim()) {
@@ -115,6 +144,27 @@ router.put('/:id', async (req, res) => {
   }
 
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  let nextImageUrl =
+    image_url !== undefined ? (image_url == null ? null : String(image_url)) : existing.image_url;
+
+  try {
+    if (Object.prototype.hasOwnProperty.call(body, 'images')) {
+      const arr = Array.isArray(images) ? images : [];
+      await setProductImages(id, arr);
+      const first = arr.map((s) => String(s || '').trim()).find(Boolean) || null;
+      nextImageUrl = first;
+    } else if (image_url !== undefined) {
+      await setProductImages(id, image_url ? [String(image_url)] : []);
+      nextImageUrl = image_url == null ? null : String(image_url);
+    }
+  } catch (e) {
+    console.error('[products] PUT setProductImages', e);
+    return res.status(500).json({
+      error:
+        'Não foi possível guardar as fotos da galeria. No MySQL, execute o script sql/migration-product-images.sql (tabela product_images).',
+    });
+  }
 
   await db.run(
     `UPDATE products SET
@@ -131,7 +181,7 @@ router.put('/:id', async (req, res) => {
       slug,
       description !== undefined ? (description == null ? null : String(description)) : existing.description,
       p,
-      image_url !== undefined ? (image_url == null ? null : String(image_url)) : existing.image_url,
+      nextImageUrl,
       category !== undefined ? (category == null ? null : String(category)) : existing.category,
       now,
       id,
@@ -143,7 +193,7 @@ router.put('/:id', async (req, res) => {
   }
 
   const row = await db.get('SELECT * FROM products WHERE id = ?', [id]);
-  const [out] = await attachCollections([row]);
+  const [out] = await attachCollectionsAndImages([row]);
   res.json(out);
 });
 

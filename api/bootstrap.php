@@ -137,3 +137,91 @@ function now_sql(): string
 {
     return date('Y-m-d H:i:s');
 }
+
+/** Garante tabela de galeria (deploys antigos). */
+function amina_ensure_product_images_table(PDO $pdo): void
+{
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS product_images (
+              id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+              product_id INT UNSIGNED NOT NULL,
+              image_url VARCHAR(2048) NOT NULL,
+              sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+              KEY idx_pi_product (product_id),
+              CONSTRAINT fk_pi_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException) {
+        /* tabela já existe ou permissões */
+    }
+}
+
+/**
+ * @param array<int,array<string,mixed>> $productRows
+ * @return array<int,array<string,mixed>>
+ */
+function attach_product_images_pdo(PDO $pdo, array $productRows): array
+{
+    $ids = [];
+    foreach ($productRows as $p) {
+        if (isset($p['id'])) {
+            $ids[] = (int) $p['id'];
+        }
+    }
+    $ids = array_values(array_unique(array_filter($ids, static function ($x) {
+        return $x > 0;
+    })));
+    if ($ids === []) {
+        $out = [];
+        foreach ($productRows as $p) {
+            $p['images'] = !empty($p['image_url']) ? [ $p['image_url'] ] : [];
+            $out[] = $p;
+        }
+
+        return $out;
+    }
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $st = $pdo->prepare(
+        "SELECT product_id, image_url FROM product_images WHERE product_id IN ($in) ORDER BY product_id, sort_order, id"
+    );
+    $st->execute($ids);
+    $byPid = [];
+    while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+        $pid = (int) $r['product_id'];
+        $byPid[$pid][] = $r['image_url'];
+    }
+    $out = [];
+    foreach ($productRows as $p) {
+        $pid = (int) $p['id'];
+        $from = $byPid[$pid] ?? [];
+        $imgs = count($from) ? $from : (!empty($p['image_url']) ? [$p['image_url']] : []);
+        $p['images'] = array_slice($imgs, 0, 5);
+        $out[] = $p;
+    }
+
+    return $out;
+}
+
+function set_product_images(PDO $pdo, int $productId, $imagesRaw): void
+{
+    $pdo->prepare('DELETE FROM product_images WHERE product_id = ?')->execute([$productId]);
+    if (!is_array($imagesRaw) || $imagesRaw === []) {
+        return;
+    }
+    $order = 0;
+    $max = 5;
+    $ins = $pdo->prepare('INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)');
+    foreach ($imagesRaw as $u) {
+        if ($order >= $max) {
+            break;
+        }
+        $url = trim((string) $u);
+        if ($url === '') {
+            continue;
+        }
+        $ins->execute([$productId, $url, $order++]);
+    }
+}
+
+amina_ensure_product_images_table($pdo);

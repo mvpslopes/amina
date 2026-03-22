@@ -487,9 +487,9 @@
   }
 
   /* ===== UPLOAD HELPER ===== */
-  async function uploadFile(file, statusId, imageUrlInputId, previewId, placeholderId) {
+  async function uploadFile(file, statusId, imageUrlInputId, previewId, placeholderId, onDone) {
     const statusEl = document.getElementById(statusId);
-    if (!file) return;
+    if (!file) return false;
     if (statusEl) statusEl.textContent = 'Enviando…';
     try {
       const fd = new FormData();
@@ -500,22 +500,132 @@
       if (!res.ok) throw new Error(data.error || 'Falha no upload');
       const base = (window.AMINA_API_BASE || '').replace(/\/$/, '') || window.location.origin;
       const fullUrl = base + data.url;
-      const inp = document.getElementById(imageUrlInputId);
-      if (inp) inp.value = fullUrl;
-      setImagePreview(previewId, placeholderId, fullUrl);
+      if (typeof onDone === 'function') {
+        onDone(fullUrl);
+      } else {
+        const inp = document.getElementById(imageUrlInputId);
+        if (inp) inp.value = fullUrl;
+        setImagePreview(previewId, placeholderId, fullUrl);
+      }
       if (statusEl) statusEl.textContent = '✓ Enviado';
+      return true;
     } catch (err) {
       if (statusEl) statusEl.textContent = '✗ ' + (err.message || 'Erro');
+      return false;
     }
   }
 
   /* ===== MODAL PRODUTO ===== */
   const formProduct = document.getElementById('formProduct');
+  let productGalleryUrls = [];
+  const PRODUCT_GALLERY_MAX = 5;
+
+  function gallerySlotsLeft() {
+    return Math.max(0, PRODUCT_GALLERY_MAX - productGalleryUrls.length);
+  }
+
+  function updateGalleryCountEl() {
+    const el = document.getElementById('productGalleryCount');
+    if (el) {
+      el.textContent = `${productGalleryUrls.length} / ${PRODUCT_GALLERY_MAX} fotos`;
+    }
+  }
+
+  /** Celular / touch: nunca usar `multiple` no input — muitos browsers só entregam 1 ficheiro ou bloqueiam. Uma foto por toque, repetir até 5. */
+  function isTouchOrMobileDevice() {
+    if (typeof window.matchMedia === 'function') {
+      try {
+        if (window.matchMedia('(pointer: coarse)').matches) return true;
+        if (window.matchMedia('(max-width: 900px)').matches) return true;
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent || ''
+    );
+  }
+
+  function applyProductFileMultipleAttr() {
+    const inp = document.getElementById('productFile');
+    if (!inp) return;
+    if (isTouchOrMobileDevice()) {
+      inp.removeAttribute('multiple');
+      return;
+    }
+    if (gallerySlotsLeft() > 1) {
+      inp.setAttribute('multiple', 'multiple');
+    } else {
+      inp.removeAttribute('multiple');
+    }
+  }
+
+  let _galleryResizeTimer;
+  window.addEventListener(
+    'resize',
+    () => {
+      clearTimeout(_galleryResizeTimer);
+      _galleryResizeTimer = setTimeout(() => applyProductFileMultipleAttr(), 200);
+    },
+    { passive: true }
+  );
+
+  function syncProductGalleryHidden() {
+    const h = document.getElementById('productImageUrl');
+    if (h) h.value = productGalleryUrls[0] || '';
+  }
+
+  function renderProductGallery() {
+    const ul = document.getElementById('productGalleryList');
+    if (!ul) return;
+    if (productGalleryUrls.length === 0) {
+      ul.innerHTML = '<li class="product-gallery-editor__empty">Nenhuma foto. Adicione URL ou envie arquivos.</li>';
+      syncProductGalleryHidden();
+      updateGalleryCountEl();
+      applyProductFileMultipleAttr();
+      return;
+    }
+    ul.innerHTML = productGalleryUrls.map((url, i) => `
+    <li class="product-gallery-editor__item" data-index="${i}">
+      <span class="product-gallery-editor__idx">${i + 1}</span>
+      <img src="${escapeHtml(url)}" alt="" />
+      <div class="product-gallery-editor__actions">
+        <button type="button" class="btn btn--icon btn--ghost" data-move="-1" title="Subir" aria-label="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+        <button type="button" class="btn btn--icon btn--ghost" data-move="1" title="Descer" aria-label="Descer"><i class="fa-solid fa-arrow-down"></i></button>
+        <button type="button" class="btn btn--icon btn--ghost product-gallery-editor__remove" data-remove title="Remover" aria-label="Remover"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </li>`).join('');
+    ul.querySelectorAll('[data-move]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const li = btn.closest('li');
+        const idx = Number(li?.dataset.index);
+        const delta = Number(btn.dataset.move);
+        const j = idx + delta;
+        if (j < 0 || j >= productGalleryUrls.length) return;
+        const t = productGalleryUrls[idx];
+        productGalleryUrls[idx] = productGalleryUrls[j];
+        productGalleryUrls[j] = t;
+        renderProductGallery();
+      });
+    });
+    ul.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const li = btn.closest('li');
+        const idx = Number(li?.dataset.index);
+        productGalleryUrls.splice(idx, 1);
+        renderProductGallery();
+      });
+    });
+    syncProductGalleryHidden();
+    updateGalleryCountEl();
+    applyProductFileMultipleAttr();
+  }
 
   async function openProductModal(id) {
     document.getElementById('modalProductTitle').textContent = id ? 'Editar produto' : 'Novo produto';
     formProduct.reset();
     formProduct.querySelector('[name=id]').value = id || '';
+    productGalleryUrls = [];
     const codeHint = document.getElementById('productCodeHint');
     const newNote = document.getElementById('productNewIdNote');
     const codeVal = document.getElementById('productCodeValue');
@@ -530,7 +640,8 @@
     }
     const statusEl = document.getElementById('productUploadStatus');
     if (statusEl) statusEl.textContent = '';
-    setImagePreview('productImgPreview', 'productImgPlaceholder', '');
+    const galleryUrlInp = document.getElementById('productGalleryUrlInput');
+    if (galleryUrlInp) galleryUrlInp.value = '';
     await loadCollectionsForChecks();
 
     if (id) {
@@ -539,27 +650,71 @@
       formProduct.querySelector('[name=price]').value       = p.price       || '';
       formProduct.querySelector('[name=category]').value    = p.category    || '';
       formProduct.querySelector('[name=description]').value = p.description || '';
-      formProduct.querySelector('[name=image_url]').value   = p.image_url   || '';
       formProduct.querySelector('[name=badge]').value       = p.badge       || '';
-      setImagePreview('productImgPreview', 'productImgPlaceholder', p.image_url || '');
+      if (Array.isArray(p.images) && p.images.length) {
+        productGalleryUrls = p.images.map(u => String(u)).filter(Boolean).slice(0, PRODUCT_GALLERY_MAX);
+      } else if (p.image_url) {
+        productGalleryUrls = [String(p.image_url)];
+      }
       const ids = new Set((p.collection_ids || []).map(Number));
       formProduct.querySelectorAll('[data-col]').forEach(chk => { chk.checked = ids.has(Number(chk.value)); });
     }
+    renderProductGallery();
     openModal(modalProduct);
   }
 
-  /* Image URL → preview */
-  const productImageUrlInp = document.getElementById('productImageUrl');
-  if (productImageUrlInp) {
-    productImageUrlInp.addEventListener('input', () =>
-      setImagePreview('productImgPreview', 'productImgPlaceholder', productImageUrlInp.value));
+  function addGalleryUrlFromInput() {
+    if (gallerySlotsLeft() <= 0) {
+      toast('Limite de 5 fotos por produto.', false);
+      return;
+    }
+    const inp = document.getElementById('productGalleryUrlInput');
+    const raw = (inp && inp.value) ? String(inp.value).trim() : '';
+    if (!raw) {
+      toast('Cole um endereço de imagem.', false);
+      return;
+    }
+    productGalleryUrls.push(raw);
+    if (inp) inp.value = '';
+    renderProductGallery();
   }
 
-  /* File upload */
+  document.getElementById('productGalleryAddUrl')?.addEventListener('click', () => addGalleryUrlFromInput());
+
+  document.getElementById('productGalleryUrlInput')?.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      addGalleryUrlFromInput();
+    }
+  });
+
   const productFileInp = document.getElementById('productFile');
   if (productFileInp) {
-    productFileInp.addEventListener('change', async e => {
-      await uploadFile(e.target.files?.[0], 'productUploadStatus', 'productImageUrl', 'productImgPreview', 'productImgPlaceholder');
+    productFileInp.addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      const slots = gallerySlotsLeft();
+      if (slots <= 0) {
+        toast('Já tem 5 fotos. Remova uma para adicionar outra.', false);
+        e.target.value = '';
+        return;
+      }
+      const toUpload = Array.from(files).slice(0, slots);
+      let ok = 0;
+      for (let i = 0; i < toUpload.length; i++) {
+        const success = await uploadFile(toUpload[i], 'productUploadStatus', null, null, null, (fullUrl) => {
+          productGalleryUrls.push(fullUrl);
+        });
+        if (success) ok += 1;
+      }
+      renderProductGallery();
+      if (ok > 0) {
+        const st = document.getElementById('productUploadStatus');
+        if (st) {
+          st.textContent =
+            ok === toUpload.length ? `✓ ${ok} foto(s) na galeria` : `✓ ${ok}/${toUpload.length} enviadas`;
+        }
+      }
       e.target.value = '';
     });
   }
@@ -577,12 +732,17 @@
     const fd = new FormData(formProduct);
     const id = fd.get('id');
     const collection_ids = Array.from(formProduct.querySelectorAll('[data-col]:checked')).map(c => Number(c.value));
+    const imgs = productGalleryUrls
+      .map((u) => String(u || '').trim())
+      .filter(Boolean)
+      .slice(0, PRODUCT_GALLERY_MAX);
     const body = {
       name:           String(fd.get('name') || '').trim(),
       price:          Number(fd.get('price')),
       category:       fd.get('category') || null,
       description:    fd.get('description') || null,
-      image_url:      fd.get('image_url') || null,
+      image_url:      imgs[0] || null,
+      images:         imgs,
       badge:          fd.get('badge') || null,
       collection_ids,
     };
@@ -591,10 +751,10 @@
     try {
       if (id) {
         await api('/api/products/' + id, { method: 'PUT', body: JSON.stringify(body) });
-        toast('Produto atualizado ✓');
+        toast('Produto atualizado ✓' + (imgs.length ? ` (${imgs.length} foto${imgs.length > 1 ? 's' : ''})` : ''));
       } else {
         await api('/api/products', { method: 'POST', body: JSON.stringify(body) });
-        toast('Produto criado ✓');
+        toast('Produto criado ✓' + (imgs.length ? ` (${imgs.length} foto${imgs.length > 1 ? 's' : ''})` : ''));
       }
       closeModal(modalProduct);
       loadProducts();

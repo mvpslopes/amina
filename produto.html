@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css?v=11" />
+  <link rel="stylesheet" href="css/style.css?v=12" />
 </head>
 <body>
 
@@ -70,6 +70,31 @@
     </div>
   </div>
   <div class="overlay" id="overlay"></div>
+
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-sidebar__header">
+      <h3>Meu Carrinho</h3>
+      <button id="closeCart"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="cart-sidebar__body" id="cartBody">
+      <div class="cart-empty" id="cartEmpty">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <p>Seu carrinho está vazio</p>
+        <a href="index.html#novidades" class="btn btn--primary" id="cartShopLink">Explorar Produtos</a>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <div class="cart-sidebar__footer" id="cartFooter" style="display:none">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button type="button" class="btn btn--whatsapp btn--full" id="btnCheckoutWhatsApp" aria-label="Finalizar pedido no WhatsApp">
+        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Finalizar no WhatsApp
+      </button>
+      <button type="button" class="btn btn--ghost btn--full" id="cartBtnContinue">Continuar comprando</button>
+    </div>
+  </div>
 
   <main class="product-page">
     <div class="container">
@@ -132,31 +157,6 @@
     </div>
   </footer>
 
-  <div class="cart-sidebar" id="cartSidebar">
-    <div class="cart-sidebar__header">
-      <h3>Meu Carrinho</h3>
-      <button id="closeCart"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="cart-sidebar__body" id="cartBody">
-      <div class="cart-empty" id="cartEmpty">
-        <i class="fa-solid fa-bag-shopping"></i>
-        <p>Seu carrinho está vazio</p>
-        <a href="index.html#novidades" class="btn btn--primary" id="cartShopLink">Explorar Produtos</a>
-      </div>
-      <div class="cart-items" id="cartItems"></div>
-    </div>
-    <div class="cart-sidebar__footer" id="cartFooter" style="display:none">
-      <div class="cart-total">
-        <span>Total</span>
-        <strong id="cartTotal">R$ 0,00</strong>
-      </div>
-      <button type="button" class="btn btn--whatsapp btn--full" id="btnCheckoutWhatsApp" aria-label="Finalizar pedido no WhatsApp">
-        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Finalizar no WhatsApp
-      </button>
-      <button type="button" class="btn btn--ghost btn--full" id="cartBtnContinue">Continuar comprando</button>
-    </div>
-  </div>
-
   <div class="toast" id="toast">
     <i class="fa-solid fa-check-circle"></i>
     <span id="toastMsg">Produto adicionado ao carrinho!</span>
@@ -166,9 +166,9 @@
     <i class="fa-solid fa-chevron-up"></i>
   </button>
 
-  <script src="js/cart-store.js?v=11"></script>
-  <script src="js/config.js?v=11"></script>
-  <script src="js/main.js?v=11"></script>
-  <script src="js/produto.js?v=11"></script>
+  <script src="js/cart-store.js?v=12"></script>
+  <script src="js/config.js?v=12"></script>
+  <script src="js/main.js?v=12"></script>
+  <script src="js/produto.js?v=12"></script>
 </body>
 </html>

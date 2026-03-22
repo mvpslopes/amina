@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const productsRoutes = require('./routes/products');
 const collectionsRoutes = require('./routes/collections');
+const { attachProductImages } = require('./lib/productImages');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -60,7 +61,8 @@ async function attachCollectionsToProducts(rows) {
 app.get('/api/public/products', async (_req, res, next) => {
   try {
     const rows = await db.all('SELECT * FROM products ORDER BY created_at DESC');
-    res.json(await attachCollectionsToProducts(rows));
+    const withCols = await attachCollectionsToProducts(rows);
+    res.json(await attachProductImages(withCols));
   } catch (e) {
     next(e);
   }
@@ -76,7 +78,8 @@ app.get('/api/public/products/:id', async (req, res, next) => {
     if (!row) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
-    const [out] = await attachCollectionsToProducts([row]);
+    const [one] = await attachCollectionsToProducts([row]);
+    const [out] = await attachProductImages([one]);
     res.json(out);
   } catch (e) {
     next(e);

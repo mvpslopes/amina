@@ -125,10 +125,26 @@
       ? `<div class="product-detail__desc">${descInner}</div>`
       : '<p class="product-detail__desc product-detail__desc-p" style="font-style:italic;opacity:0.85">Sem descrição cadastrada.</p>';
 
-    const imgResolved = resolveMediaUrl(p.image_url);
-    const imgHtml = imgResolved
-      ? `<img src="${escapeHtml(imgResolved)}" alt="${safeName}" width="800" height="1067" loading="eager" decoding="async" />`
+    const galleryUrls = Array.isArray(p.images) && p.images.length
+      ? p.images.map((u) => resolveMediaUrl(u)).filter(Boolean).slice(0, 5)
+      : p.image_url
+        ? [resolveMediaUrl(p.image_url)]
+        : [];
+    const mainUrl = galleryUrls[0] || '';
+
+    const mainHtml = mainUrl
+      ? `<img id="productMainImg" src="${escapeHtml(mainUrl)}" alt="${safeName}" width="800" height="1067" loading="eager" decoding="async" />`
       : '<div class="product-detail__placeholder" role="img" aria-label="Sem foto do produto"></div>';
+
+    const thumbsHtml =
+      galleryUrls.length > 1
+        ? `<div class="product-detail__thumbs" role="tablist" aria-label="Galeria de fotos">${galleryUrls
+            .map(
+              (u, i) =>
+                `<button type="button" class="product-detail__thumb${i === 0 ? ' is-active' : ''}" role="tab" aria-selected="${i === 0}" data-src="${escapeHtml(u)}" aria-label="Foto ${i + 1}"><img src="${escapeHtml(u)}" alt="" loading="lazy" width="88" height="110" /></button>`
+            )
+            .join('')}</div>`
+        : '';
 
     const badge = p.badge
       ? `<span class="product-detail__badge">${escapeHtml(p.badge)}</span>`
@@ -153,8 +169,11 @@
     articleEl.innerHTML = `
       <div class="product-detail__grid">
         <div class="product-detail__media">
-          ${imgHtml}
-          ${badge}
+          <div class="product-detail__main-wrap">
+            <div class="product-detail__main-img">${mainHtml}</div>
+            ${badge}
+          </div>
+          ${thumbsHtml}
         </div>
         <div class="product-detail__info">
           ${cat}
@@ -174,7 +193,7 @@
         </div>
       </div>`;
 
-    const imgEl = articleEl.querySelector('.product-detail__media img');
+    const imgEl = articleEl.querySelector('#productMainImg');
     if (imgEl) {
       imgEl.addEventListener('error', function onImgErr() {
         imgEl.removeEventListener('error', onImgErr);
@@ -185,6 +204,19 @@
         imgEl.replaceWith(ph);
       });
     }
+
+    articleEl.querySelectorAll('.product-detail__thumb').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const src = btn.getAttribute('data-src');
+        const main = document.getElementById('productMainImg');
+        if (main && src) main.setAttribute('src', src);
+        articleEl.querySelectorAll('.product-detail__thumb').forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+      });
+    });
 
     const addBtn = document.getElementById('productAddCart');
     const qtyInput = document.getElementById('productQty');

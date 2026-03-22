@@ -276,7 +276,22 @@ function finalizeOrderOnWhatsApp() {
   }
   const text = buildWhatsAppOrderText();
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  /* Mobile: window.open em nova aba costuma falhar ou “fechar” o fluxo; abrir na mesma janela abre o app/web do WhatsApp de forma fiável. */
+  closeCartSidebar();
+  const ua = navigator.userAgent || '';
+  const coarse =
+    typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+  const narrow =
+    typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches;
+  const isMobileUa = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  if (isMobileUa || coarse || narrow) {
+    window.location.assign(url);
+    return;
+  }
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!w || w.closed) {
+    window.location.assign(url);
+  }
 }
 
 window.removeFromCart = function(id) {
@@ -305,6 +320,24 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
+/** URLs relativas da API passam a carregar no mesmo host da loja. */
+function resolveMediaUrl(url) {
+  if (url == null || String(url).trim() === '') return '';
+  const u = String(url).trim();
+  if (/^https?:\/\//i.test(u) || u.startsWith('data:')) return u;
+  if (u.startsWith('//')) return window.location.protocol + u;
+  const base = String(window.AMINA_API_BASE || '').replace(/\/$/, '');
+  if (u.startsWith('/')) {
+    if (base) return base + u;
+    return window.location.origin + u;
+  }
+  if (base) return base + '/' + u.replace(/^\.\//, '');
+  if (u.startsWith('uploads/') || u.indexOf('/') >= 0) {
+    return window.location.origin + '/' + u.replace(/^\//, '');
+  }
+  return u;
+}
+
 function bindProductCard(card) {
   card.querySelectorAll('.btn-add-cart').forEach((addBtn) => {
     addBtn.addEventListener('click', (e) => {
@@ -329,6 +362,45 @@ function bindProductCard(card) {
       }
     });
   }
+  initProductCardCarousel(card);
+}
+
+/** Troca de fotos na vitrine (fade) quando há mais de uma imagem. */
+function initProductCardCarousel(card) {
+  if (card._aminaCarouselTimer) {
+    clearInterval(card._aminaCarouselTimer);
+    card._aminaCarouselTimer = null;
+  }
+  const imgs = card.querySelectorAll('.product-card__carousel-img');
+  if (imgs.length <= 1) return;
+  let idx = 0;
+  const show = () => {
+    imgs.forEach((img, i) => img.classList.toggle('active', i === idx));
+  };
+  const tick = () => {
+    idx = (idx + 1) % imgs.length;
+    show();
+  };
+  show();
+  card._aminaCarouselTimer = setInterval(tick, 4000);
+  card.addEventListener(
+    'mouseenter',
+    () => {
+      if (card._aminaCarouselTimer) {
+        clearInterval(card._aminaCarouselTimer);
+        card._aminaCarouselTimer = null;
+      }
+    },
+    { passive: true }
+  );
+  card.addEventListener(
+    'mouseleave',
+    () => {
+      if (card._aminaCarouselTimer) clearInterval(card._aminaCarouselTimer);
+      card._aminaCarouselTimer = setInterval(tick, 4000);
+    },
+    { passive: true }
+  );
 }
 
 /** Chave de filtro estável (ex.: "vestido" → "vestidos"). Sem \\p{M} (incompatível com alguns navegadores móveis). */
@@ -348,9 +420,26 @@ function buildProductCard(p) {
   const price = Number(p.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const cat   = normalizeCategoryKey(p.category);
   const safeName = escapeHtml(p.name);
-  const img   = p.image_url
-    ? `<img src="${escapeHtml(p.image_url)}" alt="${safeName}" class="product-card__img product-card__img--real" loading="lazy" />`
-    : `<div class="product-card__img product-card__img--placeholder"></div>`;
+  const rawList = Array.isArray(p.images) && p.images.length
+    ? p.images.map((u) => resolveMediaUrl(u)).filter(Boolean).slice(0, 5)
+    : p.image_url
+      ? [resolveMediaUrl(p.image_url)]
+      : [];
+  let img = '';
+  if (rawList.length > 1) {
+    img = `<div class="product-card__carousel" role="group" aria-label="Fotos do produto">
+      ${rawList
+        .map(
+          (u, i) =>
+            `<img src="${escapeHtml(u)}" alt="" class="product-card__carousel-img${i === 0 ? ' active' : ''}" loading="lazy" width="600" height="800" />`
+        )
+        .join('')}
+    </div>`;
+  } else if (rawList.length === 1) {
+    img = `<img src="${escapeHtml(rawList[0])}" alt="${safeName}" class="product-card__img product-card__img--real" loading="lazy" width="600" height="800" />`;
+  } else {
+    img = `<div class="product-card__img product-card__img--placeholder"></div>`;
+  }
   const badge = p.badge
     ? `<span class="product-card__badge">${escapeHtml(p.badge)}</span>`
     : '';

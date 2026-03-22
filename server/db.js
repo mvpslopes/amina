@@ -103,6 +103,14 @@ function migrateSqlite() {
 
     CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
     CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
+
+    CREATE TABLE IF NOT EXISTS product_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_id);
   `);
 }
 
@@ -152,6 +160,15 @@ async function migrateMysql() {
       PRIMARY KEY (product_id, collection_id),
       CONSTRAINT fk_pc_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
       CONSTRAINT fk_pc_collection FOREIGN KEY (collection_id) REFERENCES collections (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS product_images (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      product_id INT UNSIGNED NOT NULL,
+      image_url VARCHAR(2048) NOT NULL,
+      sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+      KEY idx_pi_product (product_id),
+      CONSTRAINT fk_pi_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   ];
 
