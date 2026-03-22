@@ -25,9 +25,13 @@ router.post('/', async (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
   }
-  const r = role === 'admin' ? 'admin' : null;
+  const raw = String(role || 'admin').toLowerCase();
+  if (raw === 'root') {
+    return res.status(400).json({ error: 'Não é permitido criar usuário root por aqui.' });
+  }
+  const r = raw === 'admin' || raw === 'operador' ? raw : null;
   if (!r) {
-    return res.status(400).json({ error: 'Role inválida. Use "admin".' });
+    return res.status(400).json({ error: 'Perfil inválido. Use "admin" ou "operador".' });
   }
 
   const uname = String(username).trim();

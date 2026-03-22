@@ -40,9 +40,14 @@
 
   /* ===== USER INFO ===== */
   const u = user();
+  const roleLabelUi = { root: 'Root', admin: 'Administrador', operador: 'Operador' };
+  if (u.role === 'operador') {
+    document.body.classList.add('admin--operador');
+  }
   const userLabelEl = document.getElementById('userLabel');
   if (userLabelEl) {
-    userLabelEl.textContent = (u.username || '?') + ' · ' + (u.role === 'root' ? 'Root' : 'Admin');
+    userLabelEl.textContent =
+      (u.username || '?') + ' · ' + (roleLabelUi[u.role] || u.role || '?');
   }
   const dashUserName = document.getElementById('dashUserName');
   if (dashUserName) dashUserName.textContent = u.username || '?';
@@ -321,7 +326,7 @@
         <td>${escapeHtml(p.category || '—')}</td>
         <td>${badgeChip(p.badge)}</td>
         <td class="muted">${cols}</td>
-        <td class="row-actions">
+        <td class="row-actions editor-only">
           <button type="button" class="link-btn" data-edit-product="${p.id}"><i class="fa-solid fa-pen"></i> Editar</button>
           <button type="button" class="link-btn danger" data-del-product="${p.id}"><i class="fa-solid fa-trash"></i> Excluir</button>
         </td>
@@ -355,7 +360,7 @@
       <td><strong>${escapeHtml(c.name)}</strong></td>
       <td><code>${escapeHtml(c.slug)}</code></td>
       <td>${c.product_count ?? 0}</td>
-      <td class="row-actions">
+      <td class="row-actions editor-only">
         <button type="button" class="link-btn" data-edit-col="${c.id}"><i class="fa-solid fa-pen"></i> Editar</button>
         <button type="button" class="link-btn danger" data-del-col="${c.id}"><i class="fa-solid fa-trash"></i> Excluir</button>
       </td>
@@ -375,8 +380,9 @@
       box.innerHTML = '<p class="muted">Nenhuma coleção. Crie uma na aba Coleções.</p>';
       return;
     }
+    const dis = u.role === 'operador' ? ' disabled' : '';
     box.innerHTML = collectionsCache.map(c =>
-      `<label class="chk"><input type="checkbox" value="${c.id}" data-col /> ${escapeHtml(c.name)}</label>`
+      `<label class="chk"><input type="checkbox" value="${c.id}" data-col${dis} /> ${escapeHtml(c.name)}</label>`
     ).join('');
   }
 
@@ -384,13 +390,19 @@
   async function loadUsers() {
     const list  = await api('/api/users');
     const tbody = document.getElementById('tbodyUsers');
-    tbody.innerHTML = list.map(row => `<tr>
+    tbody.innerHTML = list.map(row => {
+      const chipCls =
+        row.role === 'root' ? 'role-chip--root' : row.role === 'operador' ? 'role-chip--operador' : 'role-chip--admin';
+      const chipTxt =
+        row.role === 'root' ? 'Root' : row.role === 'operador' ? 'Operador' : 'Administrador';
+      return `<tr>
       <td><strong>${escapeHtml(row.username)}</strong></td>
-      <td><span class="role-chip ${row.role === 'root' ? 'role-chip--root' : 'role-chip--admin'}">${row.role === 'root' ? 'Root' : 'Admin'}</span></td>
+      <td><span class="role-chip ${chipCls}">${chipTxt}</span></td>
       <td>${escapeHtml((row.created_at || '').slice(0, 10) || '—')}</td>
       <td>${escapeHtml(row.created_by_username || '—')}</td>
       <td>${row.role === 'root' ? '' : `<button type="button" class="link-btn danger" data-del-user="${row.id}"><i class="fa-solid fa-trash"></i> Excluir</button>`}</td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
     tbody.querySelectorAll('[data-del-user]').forEach(btn =>
       btn.addEventListener('click', () => deleteUser(Number(btn.dataset.delUser))));
   }
@@ -544,6 +556,10 @@
 
   formProduct.addEventListener('submit', async e => {
     e.preventDefault();
+    if (u.role === 'operador') {
+      toast('Perfil somente leitura — não é possível salvar.', false);
+      return;
+    }
     const fd = new FormData(formProduct);
     const id = fd.get('id');
     const collection_ids = Array.from(formProduct.querySelectorAll('[data-col]:checked')).map(c => Number(c.value));
@@ -622,6 +638,10 @@
 
   formCollection.addEventListener('submit', async e => {
     e.preventDefault();
+    if (u.role === 'operador') {
+      toast('Perfil somente leitura — não é possível salvar.', false);
+      return;
+    }
     const fd = new FormData(formCollection);
     const id = fd.get('id');
     const body = {
@@ -658,10 +678,12 @@
     const btn = e.target.querySelector('[type=submit]');
     if (btn) btn.disabled = true;
     try {
+      const roleRaw = String(fd.get('role') || 'admin').toLowerCase();
+      const role = roleRaw === 'operador' ? 'operador' : 'admin';
       await api('/api/users', { method: 'POST', body: JSON.stringify({
         username: String(fd.get('username') || '').trim(),
         password: String(fd.get('password') || ''),
-        role: 'admin',
+        role,
       })});
       toast('Usuário criado ✓');
       e.target.reset();

@@ -30,6 +30,15 @@ function requireRoot(req, res, next) {
   next();
 }
 
+/** Root ou Administrador — pode criar/editar/apagar produtos, coleções e upload. */
+function requireEditor(req, res, next) {
+  const r = req.user && req.user.role;
+  if (r === 'root' || r === 'admin') {
+    return next();
+  }
+  return res.status(403).json({ error: 'Sem permissão para alterar dados (perfil somente leitura).' });
+}
+
 function signToken(user) {
   return jwt.sign(
     {
@@ -45,6 +54,7 @@ function signToken(user) {
 module.exports = {
   authMiddleware,
   requireRoot,
+  requireEditor,
   signToken,
   JWT_SECRET,
 };

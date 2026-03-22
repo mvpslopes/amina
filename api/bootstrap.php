@@ -123,6 +123,16 @@ function require_root(array $user): void
     }
 }
 
+/** Root ou Administrador — alterar produtos, coleções e upload. */
+function require_editor(array $user): void
+{
+    $r = (string) ($user['role'] ?? '');
+    if ($r === 'root' || $r === 'admin') {
+        return;
+    }
+    json_out(403, ['error' => 'Sem permissão para alterar dados (perfil somente leitura).']);
+}
+
 function now_sql(): string
 {
     return date('Y-m-d H:i:s');

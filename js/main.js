@@ -5,7 +5,13 @@
 'use strict';
 
 /* ===== STATE ===== */
-let cart = [];
+let cart = typeof aminaCartLoad === 'function' ? aminaCartLoad() : [];
+let itemIdCounter = 0;
+cart.forEach((item) => {
+  if (typeof item.id === 'number' && item.id >= itemIdCounter) {
+    itemIdCounter = item.id + 1;
+  }
+});
 
 /* ===== DOM REFS ===== */
 const header       = document.getElementById('header');
@@ -36,50 +42,50 @@ window.addEventListener('scroll', () => {
   if (!ticking) {
     requestAnimationFrame(() => {
       const y = window.scrollY;
-
-      // Header sticky
-      header.classList.toggle('scrolled', y > 60);
-
-      // Back to top
-      backToTop.classList.toggle('visible', y > 600);
-
+      if (header) header.classList.toggle('scrolled', y > 60);
+      if (backToTop) backToTop.classList.toggle('visible', y > 600);
       ticking = false;
     });
     ticking = true;
   }
 });
 
-backToTop.addEventListener('click', () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-});
+if (backToTop) {
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
 
 /* ===== MOBILE MENU ===== */
 function openMobileMenu() {
+  if (!mobileMenu || !overlay) return;
   mobileMenu.classList.add('open');
   overlay.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
 function closeMobileMenu() {
+  if (!mobileMenu || !overlay) return;
   mobileMenu.classList.remove('open');
   overlay.classList.remove('active');
   document.body.style.overflow = '';
 }
 
-menuBtn.addEventListener('click', openMobileMenu);
-closeMenu.addEventListener('click', closeMobileMenu);
-overlay.addEventListener('click', () => {
-  closeMobileMenu();
-  closeCartSidebar();
-});
-
-// Close mobile menu on link click
-document.querySelectorAll('.mobile-link').forEach(link => {
-  link.addEventListener('click', closeMobileMenu);
-});
+if (menuBtn && mobileMenu && overlay) {
+  menuBtn.addEventListener('click', openMobileMenu);
+  if (closeMenu) closeMenu.addEventListener('click', closeMobileMenu);
+  overlay.addEventListener('click', () => {
+    closeMobileMenu();
+    closeCartSidebar();
+  });
+  document.querySelectorAll('.mobile-link').forEach((link) => {
+    link.addEventListener('click', closeMobileMenu);
+  });
+}
 
 /* ===== CART ===== */
 function openCartSidebar() {
+  if (!cartSidebar || !overlay) return;
   closeCartSidebar._skip = false;
   cartSidebar.classList.add('open');
   overlay.classList.add('active');
@@ -87,13 +93,24 @@ function openCartSidebar() {
 }
 
 function closeCartSidebar() {
+  if (!cartSidebar || !overlay) return;
   cartSidebar.classList.remove('open');
   overlay.classList.remove('active');
   document.body.style.overflow = '';
 }
 
-cartBtn.addEventListener('click', openCartSidebar);
-closeCart.addEventListener('click', closeCartSidebar);
+if (cartBtn) cartBtn.addEventListener('click', openCartSidebar);
+if (closeCart) closeCart.addEventListener('click', closeCartSidebar);
+
+const btnCheckoutWhatsApp = document.getElementById('btnCheckoutWhatsApp');
+if (btnCheckoutWhatsApp) {
+  btnCheckoutWhatsApp.addEventListener('click', () => finalizeOrderOnWhatsApp());
+}
+
+const cartBtnContinue = document.getElementById('cartBtnContinue');
+if (cartBtnContinue) {
+  cartBtnContinue.addEventListener('click', () => closeCartSidebar());
+}
 
 if (cartShopLink) {
   cartShopLink.addEventListener('click', () => {
@@ -102,6 +119,7 @@ if (cartShopLink) {
 }
 
 function updateCart() {
+  if (!cartCount || !cartTotal || !cartEmpty || !cartItems || !cartFooter) return;
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
@@ -123,6 +141,9 @@ function updateCart() {
     cartFooter.style.display = 'flex';
     renderCartItems();
   }
+  if (typeof aminaCartSave === 'function') {
+    aminaCartSave(cart);
+  }
 }
 
 function renderCartItems() {
@@ -134,36 +155,122 @@ function renderCartItems() {
     'linear-gradient(135deg, #f5e6d8, #d4a574)',
   ];
 
-  cartItems.innerHTML = cart.map((item, i) => `
+  cartItems.innerHTML = cart.map((item, i) => {
+    const lineTotal = item.price * item.qty;
+    const codeLine = item.productId
+      ? `<p class="cart-item__code">Cód. #${escapeHtml(item.productId)}</p>`
+      : '';
+    return `
     <div class="cart-item">
       <div class="cart-item__thumb" style="background: ${colors[i % colors.length]}; border-radius: 4px;"></div>
       <div class="cart-item__info">
-        <p class="cart-item__name">${item.name}</p>
-        <p class="cart-item__price">${formatCurrency(item.price)}</p>
-        <div style="display:flex; align-items:center; gap:0.75rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem; border: 1px solid #e5e5e5; border-radius: 4px; overflow:hidden;">
-            <button onclick="changeQty(${item.id}, -1)" style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#666; cursor:pointer; background:none; border:none;">−</button>
-            <span style="font-size:0.85rem; font-weight:600; min-width:20px; text-align:center;">${item.qty}</span>
-            <button onclick="changeQty(${item.id}, 1)" style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:1rem; color:#666; cursor:pointer; background:none; border:none;">+</button>
+        <p class="cart-item__name">${escapeHtml(item.name)}</p>
+        ${codeLine}
+        <p class="cart-item__unit">${formatCurrency(item.price)} <span class="cart-item__unit-label">cada</span></p>
+        <p class="cart-item__line-total">Subtotal: <strong>${formatCurrency(lineTotal)}</strong></p>
+        <div class="cart-item__qty-row">
+          <div class="cart-qty" role="group" aria-label="Quantidade">
+            <button type="button" class="cart-qty__btn" onclick="changeQty(${item.id}, -1)" aria-label="Diminuir">−</button>
+            <span class="cart-qty__val">${item.qty}</span>
+            <button type="button" class="cart-qty__btn" onclick="changeQty(${item.id}, 1)" aria-label="Aumentar">+</button>
           </div>
-          <button class="cart-item__remove" onclick="removeFromCart(${item.id})">Remover</button>
+          <button type="button" class="cart-item__remove" onclick="removeFromCart(${item.id})">Remover</button>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
-let itemIdCounter = 0;
+function addToCart(name, price, productId, qtyArg) {
+  const pr = parseFloat(price);
+  const safePrice = Number.isFinite(pr) ? pr : 0;
+  const pid = productId != null && productId !== '' ? String(productId) : null;
+  let addQty = parseInt(String(qtyArg), 10);
+  if (!Number.isFinite(addQty) || addQty < 1) addQty = 1;
+  if (addQty > 99) addQty = 99;
 
-function addToCart(name, price) {
-  const existing = cart.find(item => item.name === name);
-  if (existing) {
-    existing.qty += 1;
+  let existing = null;
+  if (pid) {
+    existing = cart.find((item) => item.productId === pid);
   } else {
-    cart.push({ id: itemIdCounter++, name, price: parseFloat(price), qty: 1 });
+    existing = cart.find((item) => !item.productId && item.name === name);
+  }
+  if (existing) {
+    existing.qty += addQty;
+  } else {
+    cart.push({
+      id: itemIdCounter++,
+      productId: pid,
+      name,
+      price: safePrice,
+      qty: addQty,
+    });
   }
   updateCart();
-  showToast(`"${name}" adicionado ao carrinho!`);
+  const msg =
+    addQty > 1
+      ? `${addQty} × "${name}" adicionados ao carrinho!`
+      : `"${name}" adicionado ao carrinho!`;
+  showToast(msg);
+}
+
+window.addToCart = addToCart;
+
+/** Remove caracteres que quebram formatação no WhatsApp (* _ etc.). */
+function sanitizeWhatsappText(s) {
+  return String(s)
+    .replace(/[*_~`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildWhatsAppOrderText() {
+  const lines = [];
+  lines.push('🛍️ *PEDIDO ÂMINA*');
+  lines.push('');
+  lines.push('Olá! Quero finalizar este pedido pelo site:');
+  lines.push('');
+  lines.push('━━━━━━━━━━━━━━━━');
+  lines.push('*Itens*');
+  lines.push('');
+  let n = 1;
+  let total = 0;
+  cart.forEach((item) => {
+    const sub = item.price * item.qty;
+    total += sub;
+    const name = sanitizeWhatsappText(item.name);
+    lines.push(`${n}. *${name}*`);
+    if (item.productId) {
+      lines.push(`   • Cód.: #${item.productId}`);
+    }
+    lines.push(
+      `   • Qtd: ${item.qty} × ${formatCurrency(item.price)} = *${formatCurrency(sub)}*`
+    );
+    lines.push('');
+    n += 1;
+  });
+  lines.push('━━━━━━━━━━━━━━━━');
+  lines.push(`*Total estimado:* ${formatCurrency(total)}`);
+  lines.push('');
+  lines.push('_Pagamento e entrega combinamos por aqui._');
+  lines.push('');
+  lines.push('Enviado pelo site ÂMINA.');
+  return lines.join('\n');
+}
+
+function finalizeOrderOnWhatsApp() {
+  if (cart.length === 0) {
+    showToast('Seu carrinho está vazio.');
+    return;
+  }
+  const phone = (typeof window.AMINA_WHATSAPP === 'string' && window.AMINA_WHATSAPP) || '';
+  if (!phone || phone.length < 10) {
+    showToast('WhatsApp da loja não configurado.');
+    return;
+  }
+  const text = buildWhatsAppOrderText();
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 window.removeFromCart = function(id) {
@@ -186,14 +293,20 @@ const productsLoading = document.getElementById('productsLoading');
 const productsEmpty   = document.getElementById('productsEmpty');
 const filterWrap      = document.querySelector('.products__filters');
 
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
 function bindProductCard(card) {
-  const addBtn = card.querySelector('.btn-add-cart');
-  if (addBtn) {
+  card.querySelectorAll('.btn-add-cart').forEach((addBtn) => {
     addBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      addToCart(addBtn.dataset.name, addBtn.dataset.price);
+      const pid = addBtn.dataset.productId || '';
+      addToCart(addBtn.dataset.name, addBtn.dataset.price, pid || null);
     });
-  }
+  });
   const wishBtn = card.querySelector('.product-card__wish');
   if (wishBtn) {
     wishBtn.addEventListener('click', (e) => {
@@ -212,26 +325,28 @@ function bindProductCard(card) {
   }
 }
 
-/** Chave de filtro estável (ex.: "vestido" → "vestidos"). */
+/** Chave de filtro estável (ex.: "vestido" → "vestidos"). Sem \\p{M} (incompatível com alguns navegadores móveis). */
 function normalizeCategoryKey(raw) {
-  const c = String(raw || '')
-    .toLowerCase()
-    .trim()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '');
-  if (c === 'vestido') return 'vestidos';
-  if (c === 'calca' || c === 'calças') return 'calças';
-  return c;
+  let s = String(raw || '').toLowerCase().trim();
+  try {
+    s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch (e) {
+    /* normalize ausente em motores muito antigos */
+  }
+  if (s === 'vestido') return 'vestidos';
+  if (s === 'calca' || s === 'calças') return 'calças';
+  return s;
 }
 
 function buildProductCard(p) {
   const price = Number(p.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const cat   = normalizeCategoryKey(p.category);
+  const safeName = escapeHtml(p.name);
   const img   = p.image_url
-    ? `<img src="${p.image_url}" alt="${p.name}" class="product-card__img product-card__img--real" loading="lazy" />`
+    ? `<img src="${escapeHtml(p.image_url)}" alt="${safeName}" class="product-card__img product-card__img--real" loading="lazy" />`
     : `<div class="product-card__img product-card__img--placeholder"></div>`;
   const badge = p.badge
-    ? `<span class="product-card__badge">${p.badge}</span>`
+    ? `<span class="product-card__badge">${escapeHtml(p.badge)}</span>`
     : '';
   const catLabel = p.category || '';
 
@@ -239,24 +354,37 @@ function buildProductCard(p) {
   div.className = 'product-card product-card--catalog';
   div.dataset.category = cat;
   /* Catálogo da API: visível de imediato (evita opacity:0 se o IntersectionObserver não disparar). */
+  const detailHref = `produto.html?id=${encodeURIComponent(String(p.id))}`;
   div.innerHTML = `
     <div class="product-card__media">
+      <a href="${detailHref}" class="product-card__img-link" aria-label="Ver detalhes: ${safeName}">
       ${img}
+      </a>
       <div class="product-card__overlay">
-        <button class="btn-add-cart" data-name="${p.name}" data-price="${p.price}">
+        <button type="button" class="btn-add-cart">
           <i class="fa-solid fa-bag-shopping"></i> Adicionar
         </button>
       </div>
-      <button class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
+      <button type="button" class="product-card__wish"><i class="fa-regular fa-heart"></i></button>
       ${badge}
     </div>
+    <a href="${detailHref}" class="product-card__info-link">
     <div class="product-card__info">
-      ${catLabel ? `<span class="product-card__category">${catLabel}</span>` : ''}
-      <h4 class="product-card__name">${p.name}</h4>
+      ${catLabel ? `<span class="product-card__category">${escapeHtml(catLabel)}</span>` : ''}
+      <h4 class="product-card__name">${safeName}</h4>
       <div class="product-card__price">
         <span class="price-current">${price}</span>
       </div>
-    </div>`;
+    </div>
+    </a>
+    <button type="button" class="product-card__add-mobile btn-add-cart" aria-label="Adicionar ao carrinho">
+      <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i> Adicionar ao carrinho
+    </button>`;
+  div.querySelectorAll('.btn-add-cart').forEach((btn) => {
+    btn.dataset.name = p.name;
+    btn.dataset.price = String(p.price);
+    btn.dataset.productId = String(p.id);
+  });
   bindProductCard(div);
   return div;
 }
@@ -302,9 +430,64 @@ function setProductsEmptyMessage(html, showFilters) {
   if (filterWrap) filterWrap.style.display = showFilters ? '' : 'none';
 }
 
+/**
+ * Tenta várias URLs (subpasta vs raiz) e valida JSON em array — evita falha silenciosa.
+ */
+async function fetchPublicProductsList() {
+  const urls = [];
+  const push = (u) => {
+    if (u && !urls.includes(u)) urls.push(u);
+  };
+  if (typeof window.aminaApiUrl === 'function') {
+    push(window.aminaApiUrl('/api/public/products'));
+  }
+  const base = String(window.AMINA_API_BASE || '').replace(/\/$/, '');
+  if (base) {
+    push(base + '/api/public/products');
+  }
+  push(window.location.origin + '/api/public/products');
+  push('/api/public/products');
+
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i];
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      const text = await res.text();
+      if (!res.ok) {
+        console.warn('[ÂMINA] Catálogo HTTP', res.status, url);
+        continue;
+      }
+      const trim = text.trim();
+      if (!trim || trim.startsWith('<')) {
+        console.warn('[ÂMINA] Catálogo: resposta não parece JSON', url);
+        continue;
+      }
+      let data;
+      try {
+        data = JSON.parse(trim);
+      } catch (parseErr) {
+        console.warn('[ÂMINA] Catálogo: JSON inválido', url, parseErr);
+        continue;
+      }
+      if (!Array.isArray(data)) {
+        console.warn('[ÂMINA] Catálogo: esperado array de produtos, veio', typeof data, url);
+        continue;
+      }
+      if (typeof console !== 'undefined' && console.info) {
+        console.info('[ÂMINA] Produtos carregados via', url, '(' + data.length + ' itens)');
+      }
+      return { ok: true, products: data, urlUsed: url };
+    } catch (err) {
+      console.warn('[ÂMINA] Catálogo fetch', url, err);
+    }
+  }
+  return { ok: false, products: [], urlUsed: null };
+}
+
 async function loadProductsFromAPI() {
+  if (!productsGrid) return;
   if (productsLoading) productsLoading.hidden = false;
-  if (productsEmpty)   productsEmpty.hidden   = true;
+  if (productsEmpty) productsEmpty.hidden = true;
   productsGrid.innerHTML = '';
   if (window.location.protocol === 'file:') {
     if (productsLoading) productsLoading.hidden = true;
@@ -317,17 +500,22 @@ async function loadProductsFromAPI() {
     return;
   }
   try {
-    const url =
-      typeof window.aminaApiUrl === 'function'
-        ? window.aminaApiUrl('/api/public/products')
-        : (String(window.AMINA_API_BASE || '').replace(/\/$/, '') + '/api/public/products');
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const products = await res.json();
+    const { ok, products, urlUsed } = await fetchPublicProductsList();
     if (productsLoading) productsLoading.hidden = true;
-    if (!Array.isArray(products) || products.length === 0) {
+    if (!ok) {
       setProductsEmptyMessage(
-        'Em breve novidades incríveis por aqui. <br>Fique de olho!',
+        'Não foi possível carregar o catálogo. Abra o <strong>Consola</strong> do browser (F12) e procure por <code>[ÂMINA]</code>.<br>' +
+          '<small>Confirme que a pasta <code>api/</code> existe no servidor e que ' +
+          '<code>/api/public/products</code> devolve JSON (array). Em subpastas, atualize o deploy ou defina ' +
+          '<code>window.AMINA_API_BASE</code> antes de <code>js/config.js</code>.</small>',
+        false
+      );
+      return;
+    }
+    if (products.length === 0) {
+      setProductsEmptyMessage(
+        'Ainda não há produtos na loja (lista vinda da API está vazia).<br>' +
+          '<small>Se acabou de cadastrar, confirme no painel e que o mesmo site aponta para o mesmo banco.</small>',
         false
       );
       return;
@@ -348,14 +536,16 @@ async function loadProductsFromAPI() {
       productsGrid.appendChild(card);
     });
     if (allBtn) applyFilter('todos', allBtn);
+    try {
+      window.__aminaCatalogUrl = urlUsed;
+    } catch (e2) {
+      /* ignore */
+    }
   } catch (e) {
     if (productsLoading) productsLoading.hidden = true;
     console.warn('ÂMINA: falha ao carregar /api/public/products', e);
     setProductsEmptyMessage(
-      'Não foi possível carregar o catálogo. Confirme que a <strong>API</strong> está no ar ' +
-        '(pasta <code>api/</code> no mesmo site ou <code>npm start</code> em desenvolvimento).<br>' +
-        '<small>Se o site estiver numa subpasta, o ficheiro <code>js/config.js</code> já ajusta o caminho; ' +
-        'em casos especiais defina <code>window.AMINA_API_BASE</code> antes do config.</small>',
+      'Erro inesperado ao carregar produtos. Veja a consola (F12).',
       false
     );
   }
@@ -387,6 +577,7 @@ if (allFilterBtn) {
 /* ===== TOAST ===== */
 let toastTimer;
 function showToast(msg) {
+  if (!toast || !toastMsg) return;
   toastMsg.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toastTimer);
@@ -396,16 +587,20 @@ function showToast(msg) {
 }
 
 /* ===== NEWSLETTER ===== */
-newsletterForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const input = newsletterForm.querySelector('input[type="email"]');
-  showToast(`Cadastro realizado! Bem-vinda ao reino, ${input.value.split('@')[0]}!`);
-  input.value = '';
-});
+if (newsletterForm) {
+  newsletterForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = newsletterForm.querySelector('input[type="email"]');
+    showToast(`Cadastro realizado! Bem-vinda ao reino, ${input.value.split('@')[0]}!`);
+    input.value = '';
+  });
+}
 
 /* ===== UTILITY ===== */
 function formatCurrency(value) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const n = Number(value);
+  const x = Number.isFinite(n) ? n : 0;
+  return x.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 /* ===== SMOOTH ANCHOR SCROLL ===== */
@@ -437,8 +632,9 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, observerOptions);
 
+/* Não incluir .product-card aqui: cards do catálogo (#productsGrid) têm animação própria e não devem ficar opacity:0 */
 document.querySelectorAll(
-  '.brand-story__grid, .collection-card, .product-card, .feature-item, .testimonial-card, .lookbook__item, .insta-item'
+  '.brand-story__grid, .collection-card, .feature-item, .testimonial-card, .lookbook__item, .insta-item'
 ).forEach(el => {
   el.style.opacity = '0';
   el.style.transform = 'translateY(30px)';

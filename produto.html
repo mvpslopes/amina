@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="ÂMINA — Detalhe do produto. Moda gringa de força e superação." />
+  <title>Produto — ÂMINA</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css?v=10" />
+</head>
+<body>
+
+  <div class="announcement-bar">
+    <p>Frete grátis acima de R$499 &nbsp;|&nbsp; Novas coleções toda semana &nbsp;|&nbsp; <a href="index.html#sobre">Conheça a história de Âmina</a></p>
+  </div>
+
+  <header class="header" id="header">
+    <div class="header__inner">
+      <button type="button" class="header__menu-btn" id="menuBtn" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <a href="index.html" class="header__logo">
+        <img src="assets/images/logo-vinho.png" alt="ÂMINA" class="header__logo-img" />
+      </a>
+
+      <nav class="header__nav" id="headerNav">
+        <a href="index.html#colecoes">Coleções</a>
+        <a href="index.html#novidades">Novidades</a>
+        <a href="index.html#lookbook">Lookbook</a>
+        <a href="index.html#sobre">Nossa História</a>
+        <a href="index.html#contato">Contato</a>
+      </nav>
+
+      <div class="header__actions">
+        <a href="admin/login.html" class="header__internal-btn" title="Área interna — painel">
+          <i class="fa-solid fa-lock" aria-hidden="true"></i>
+          <span class="header__internal-btn-text">Área interna</span>
+        </a>
+        <button class="btn-icon" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="btn-icon" aria-label="Favoritos"><i class="fa-regular fa-heart"></i></button>
+        <button class="btn-icon cart-btn" id="cartBtn" aria-label="Carrinho">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-menu__close" id="closeMenu"><i class="fa-solid fa-xmark"></i></button>
+    <nav class="mobile-menu__nav">
+      <a href="index.html#colecoes" class="mobile-link">Coleções</a>
+      <a href="index.html#novidades" class="mobile-link">Novidades</a>
+      <a href="index.html#lookbook" class="mobile-link">Lookbook</a>
+      <a href="index.html#sobre" class="mobile-link">Nossa História</a>
+      <a href="index.html#contato" class="mobile-link">Contato</a>
+      <a href="admin/login.html" class="mobile-link mobile-link--internal">Área interna</a>
+    </nav>
+    <div class="mobile-menu__footer">
+      <a href="#"><i class="fa-brands fa-instagram"></i></a>
+      <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+      <a href="#"><i class="fa-brands fa-pinterest"></i></a>
+    </div>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+  <main class="product-page">
+    <div class="container">
+      <a href="index.html#novidades" class="product-back"><i class="fa-solid fa-arrow-left-long" aria-hidden="true"></i> Voltar à loja</a>
+
+      <div id="productRoot">
+        <p class="product-detail__loading" id="productLoading">Carregando produto…</p>
+        <div class="product-detail__error" id="productError" hidden>
+          <p id="productErrorMsg">Não foi possível carregar este produto.</p>
+          <p style="margin-top:1rem"><a href="index.html#novidades">Ver novidades</a></p>
+        </div>
+        <article class="product-detail" id="productArticle" hidden></article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" id="contato">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <img src="assets/images/logo-amina-3.png" alt="ÂMINA" class="footer__logo" width="180" height="48" />
+          <p>Moda gringa para mulheres que não precisam de permissão para reinar.</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            <a href="#" aria-label="Pinterest"><i class="fa-brands fa-pinterest"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          </div>
+        </div>
+        <div class="footer__col">
+          <h5>Loja</h5>
+          <ul>
+            <li><a href="index.html#novidades">Novidades</a></li>
+            <li><a href="index.html#colecoes">Coleções</a></li>
+            <li><a href="index.html#lookbook">Lookbook</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h5>Informações</h5>
+          <ul>
+            <li><a href="index.html#sobre">Nossa História</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h5>Atendimento</h5>
+          <ul>
+            <li><a href="#"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; 2026 ÂMINA. Todos os direitos reservados.</p>
+        <div class="footer__payments">
+          <i class="fa-brands fa-cc-visa"></i>
+          <i class="fa-brands fa-cc-mastercard"></i>
+          <i class="fa-brands fa-pix"></i>
+          <i class="fa-brands fa-cc-amex"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-sidebar__header">
+      <h3>Meu Carrinho</h3>
+      <button id="closeCart"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="cart-sidebar__body" id="cartBody">
+      <div class="cart-empty" id="cartEmpty">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <p>Seu carrinho está vazio</p>
+        <a href="index.html#novidades" class="btn btn--primary" id="cartShopLink">Explorar Produtos</a>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <div class="cart-sidebar__footer" id="cartFooter" style="display:none">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button type="button" class="btn btn--whatsapp btn--full" id="btnCheckoutWhatsApp" aria-label="Finalizar pedido no WhatsApp">
+        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Finalizar no WhatsApp
+      </button>
+      <button type="button" class="btn btn--ghost btn--full" id="cartBtnContinue">Continuar comprando</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastMsg">Produto adicionado ao carrinho!</span>
+  </div>
+
+  <button class="back-to-top" id="backToTop" aria-label="Voltar ao topo">
+    <i class="fa-solid fa-chevron-up"></i>
+  </button>
+
+  <script src="js/cart-store.js?v=10"></script>
+  <script src="js/config.js?v=10"></script>
+  <script src="js/main.js?v=10"></script>
+  <script src="js/produto.js?v=10"></script>
+</body>
+</html>

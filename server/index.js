@@ -37,26 +37,46 @@ app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/collections', collectionsRoutes);
 
+async function attachCollectionsToProducts(rows) {
+  const allPc = await db.all('SELECT product_id, collection_id FROM product_collections');
+  const byProduct = {};
+  for (const pc of allPc) {
+    if (!byProduct[pc.product_id]) byProduct[pc.product_id] = [];
+    byProduct[pc.product_id].push(pc.collection_id);
+  }
+  const colRows = await db.all('SELECT id, name, slug FROM collections');
+  const colMap = Object.fromEntries(colRows.map((c) => [c.id, c]));
+  return rows.map((p) => {
+    const row = { ...p };
+    if (row.price != null && typeof row.price === 'string') {
+      row.price = parseFloat(row.price);
+    }
+    const ids = byProduct[p.id] || [];
+    const collections = ids.map((cid) => colMap[cid]).filter(Boolean);
+    return { ...row, collections };
+  });
+}
+
 app.get('/api/public/products', async (_req, res, next) => {
   try {
     const rows = await db.all('SELECT * FROM products ORDER BY created_at DESC');
-    const allPc = await db.all('SELECT product_id, collection_id FROM product_collections');
-    const byProduct = {};
-    for (const pc of allPc) {
-      if (!byProduct[pc.product_id]) byProduct[pc.product_id] = [];
-      byProduct[pc.product_id].push(pc.collection_id);
+    res.json(await attachCollectionsToProducts(rows));
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.get('/api/public/products/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID inválido' });
     }
-    const colRows = await db.all('SELECT id, name, slug FROM collections');
-    const colMap = Object.fromEntries(colRows.map((c) => [c.id, c]));
-    const out = rows.map((p) => {
-      const row = { ...p };
-      if (row.price != null && typeof row.price === 'string') {
-        row.price = parseFloat(row.price);
-      }
-      const ids = byProduct[p.id] || [];
-      const collections = ids.map((cid) => colMap[cid]).filter(Boolean);
-      return { ...row, collections };
-    });
+    const row = await db.get('SELECT * FROM products WHERE id = ?', [id]);
+    if (!row) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    const [out] = await attachCollectionsToProducts([row]);
     res.json(out);
   } catch (e) {
     next(e);
@@ -96,8 +116,8 @@ const upload = multer({
   },
 });
 
-const { authMiddleware } = require('./middleware/auth');
-app.post('/api/upload', authMiddleware, upload.single('file'), (req, res) => {
+const { authMiddleware, requireEditor } = require('./middleware/auth');
+app.post('/api/upload', authMiddleware, requireEditor, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Envie um arquivo de imagem (jpeg, png, webp, gif)' });
   }

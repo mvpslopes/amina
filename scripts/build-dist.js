@@ -50,6 +50,7 @@ fs.mkdirSync(staging, { recursive: true });
 
 const copies = [
   ['index.html', 'index.html'],
+  ['produto.html', 'produto.html'],
   ['css', 'css'],
   ['js', 'js'],
   ['assets', 'assets'],

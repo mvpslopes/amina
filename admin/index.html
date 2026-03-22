@@ -2,13 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ÂMINA — Painel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="/admin/css/admin.css?v=6" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=7" />
 </head>
 <body class="admin-body">
 
@@ -119,10 +119,10 @@
       <div class="dashboard-quick">
         <h3>Ações rápidas</h3>
         <div class="dashboard-quick__btns">
-          <button type="button" class="btn btn--primary" id="dashBtnNewProduct">
+          <button type="button" class="btn btn--primary editor-only" id="dashBtnNewProduct">
             <i class="fa-solid fa-plus"></i> Novo produto
           </button>
-          <button type="button" class="btn btn--ghost" id="dashBtnNewCollection">
+          <button type="button" class="btn btn--ghost editor-only" id="dashBtnNewCollection">
             <i class="fa-solid fa-plus"></i> Nova coleção
           </button>
         </div>
@@ -138,7 +138,7 @@
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="search" id="productSearch" placeholder="Buscar produto…" class="search-input" />
           </div>
-          <button type="button" class="btn btn--primary" id="btnNewProduct">
+          <button type="button" class="btn btn--primary editor-only" id="btnNewProduct">
             <i class="fa-solid fa-plus"></i> Novo produto
           </button>
         </div>
@@ -162,7 +162,7 @@
         <div class="empty-state" id="emptyProducts" hidden>
           <i class="fa-solid fa-shirt empty-state__icon"></i>
           <p>Nenhum produto cadastrado ainda.</p>
-          <button type="button" class="btn btn--primary" id="emptyBtnProduct">
+          <button type="button" class="btn btn--primary editor-only" id="emptyBtnProduct">
             <i class="fa-solid fa-plus"></i> Adicionar primeiro produto
           </button>
         </div>
@@ -173,7 +173,7 @@
     <section id="panel-collections" class="admin-panel">
       <div class="panel-head">
         <h2><i class="fa-solid fa-layer-group"></i> Coleções</h2>
-        <button type="button" class="btn btn--primary" id="btnNewCollection">
+        <button type="button" class="btn btn--primary editor-only" id="btnNewCollection">
           <i class="fa-solid fa-plus"></i> Nova coleção
         </button>
       </div>
@@ -193,7 +193,7 @@
         <div class="empty-state" id="emptyCollections" hidden>
           <i class="fa-solid fa-layer-group empty-state__icon"></i>
           <p>Nenhuma coleção cadastrada ainda.</p>
-          <button type="button" class="btn btn--primary" id="emptyBtnCollection">
+          <button type="button" class="btn btn--primary editor-only" id="emptyBtnCollection">
             <i class="fa-solid fa-plus"></i> Criar primeira coleção
           </button>
         </div>
@@ -204,10 +204,10 @@
     <section id="panel-users" class="admin-panel">
       <div class="panel-head">
         <h2><i class="fa-solid fa-users"></i> Usuários</h2>
-        <p class="panel-hint">Apenas Root pode criar administradores.</p>
+        <p class="panel-hint">Apenas Root pode criar usuários e definir o perfil (Administrador ou Operador).</p>
       </div>
       <div class="card card--form">
-        <h3><i class="fa-solid fa-user-plus"></i> Novo administrador</h3>
+        <h3><i class="fa-solid fa-user-plus"></i> Novo usuário</h3>
         <form id="createUserForm" class="grid-form">
           <label>
             <span>Usuário</span>
@@ -216,6 +216,13 @@
           <label>
             <span>Senha</span>
             <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            <span>Perfil</span>
+            <select name="role" class="select-field" required>
+              <option value="admin">Administrador — cadastra e edita produtos e coleções</option>
+              <option value="operador">Operador — só visualiza (sem alterar dados)</option>
+            </select>
           </label>
           <div class="form-actions">
             <button type="submit" class="btn btn--primary">
@@ -320,7 +327,7 @@
               <span>URL da imagem</span>
               <input type="url" name="image_url" id="productImageUrl" placeholder="https://…" />
             </label>
-            <div class="upload-row">
+            <div class="upload-row editor-only">
               <label class="upload-label">
                 <span>Ou enviar arquivo</span>
                 <input type="file" id="productFile" accept="image/jpeg,image/png,image/webp,image/gif" />
@@ -331,7 +338,7 @@
         </div>
         <div class="modal__actions">
           <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
-          <button type="submit" class="btn btn--primary">
+          <button type="submit" class="btn btn--primary editor-only">
             <i class="fa-solid fa-floppy-disk"></i> Salvar produto
           </button>
         </div>
@@ -374,7 +381,7 @@
               <span>URL da imagem (capa)</span>
               <input type="url" name="image_url" id="collectionImageUrl" placeholder="https://…" />
             </label>
-            <div class="upload-row">
+            <div class="upload-row editor-only">
               <label class="upload-label">
                 <span>Ou enviar arquivo</span>
                 <input type="file" id="collectionFile" accept="image/jpeg,image/png,image/webp,image/gif" />
@@ -385,7 +392,7 @@
         </div>
         <div class="modal__actions">
           <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
-          <button type="submit" class="btn btn--primary">
+          <button type="submit" class="btn btn--primary editor-only">
             <i class="fa-solid fa-floppy-disk"></i> Salvar coleção
           </button>
         </div>

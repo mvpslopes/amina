@@ -68,7 +68,7 @@ function migrateSqlite() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL COLLATE NOCASE,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('root', 'admin')),
+      role TEXT NOT NULL CHECK(role IN ('root', 'admin', 'operador')),
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       created_by INTEGER REFERENCES users(id)
     );
@@ -112,7 +112,7 @@ async function migrateMysql() {
       id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       username VARCHAR(190) NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
-      role ENUM('root', 'admin') NOT NULL,
+      role ENUM('root', 'admin', 'operador') NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_by INT UNSIGNED NULL,
       UNIQUE KEY uk_users_username (username),
@@ -157,6 +157,13 @@ async function migrateMysql() {
 
   for (const sql of stmts) {
     await pool.execute(sql);
+  }
+  try {
+    await pool.execute(
+      "ALTER TABLE users MODIFY COLUMN role ENUM('root','admin','operador') NOT NULL"
+    );
+  } catch {
+    /* já migrado ou ambiente sem permissão */
   }
 }
 

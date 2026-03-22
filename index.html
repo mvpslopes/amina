@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="ÂMINA — Moda gringa de força e superação. Peças internacionais para mulheres que reinam." />
   <title>ÂMINA — Moda Gringa</title>
 
@@ -27,7 +27,7 @@
   <header class="header" id="header">
     <div class="header__inner">
 
-      <button class="header__menu-btn" id="menuBtn" aria-label="Abrir menu">
+      <button type="button" class="header__menu-btn" id="menuBtn" aria-label="Abrir menu">
         <span></span><span></span><span></span>
       </button>
 
@@ -178,6 +178,39 @@
     </div>
   </section>
 
+  <!-- ===== NOVIDADES / PRODUTOS ===== -->
+  <section class="products" id="novidades">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Acabou de chegar</span>
+        <h2 class="section-title">Novidades <em>da Semana</em></h2>
+        <a href="#" class="section-link">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+
+      <div class="products__filters">
+        <button class="filter-btn active" data-filter="todos">Todos</button>
+        <button class="filter-btn" data-filter="tops">Tops & Bodies</button>
+        <button class="filter-btn" data-filter="vestidos">Vestidos & Saias</button>
+        <button class="filter-btn" data-filter="calças">Calças</button>
+      </div>
+
+      <div class="products__grid" id="productsGrid">
+        <!-- produtos carregados via API em js/main.js -->
+      </div>
+
+      <div class="products__empty" id="productsEmpty" hidden>
+        <p>Em breve novidades incríveis por aqui. <br>Fique de olho!</p>
+      </div>
+
+      <div class="products__loading" id="productsLoading" hidden aria-label="Carregando produtos">
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
+        <div class="product-skeleton"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== COLEÇÕES ===== -->
   <section class="collections" id="colecoes">
     <div class="container">
@@ -224,39 +257,6 @@
           </div>
         </a>
 
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== NOVIDADES / PRODUTOS ===== -->
-  <section class="products" id="novidades">
-    <div class="container">
-      <div class="section-header">
-        <span class="eyebrow">Acabou de chegar</span>
-        <h2 class="section-title">Novidades <em>da Semana</em></h2>
-        <a href="#" class="section-link">Ver tudo <i class="fa-solid fa-arrow-right"></i></a>
-      </div>
-
-      <div class="products__filters">
-        <button class="filter-btn active" data-filter="todos">Todos</button>
-        <button class="filter-btn" data-filter="tops">Tops & Bodies</button>
-        <button class="filter-btn" data-filter="vestidos">Vestidos & Saias</button>
-        <button class="filter-btn" data-filter="calças">Calças</button>
-      </div>
-
-      <div class="products__grid" id="productsGrid">
-        <!-- produtos carregados via API em js/main.js -->
-      </div>
-
-      <div class="products__empty" id="productsEmpty" hidden>
-        <p>Em breve novidades incríveis por aqui. <br>Fique de olho!</p>
-      </div>
-
-      <div class="products__loading" id="productsLoading" aria-label="Carregando produtos">
-        <div class="product-skeleton"></div>
-        <div class="product-skeleton"></div>
-        <div class="product-skeleton"></div>
-        <div class="product-skeleton"></div>
       </div>
     </div>
   </section>
@@ -496,8 +496,10 @@
         <span>Total</span>
         <strong id="cartTotal">R$ 0,00</strong>
       </div>
-      <button class="btn btn--primary btn--full">Finalizar Compra</button>
-      <button class="btn btn--ghost btn--full">Continuar Comprando</button>
+      <button type="button" class="btn btn--whatsapp btn--full" id="btnCheckoutWhatsApp" aria-label="Finalizar pedido no WhatsApp">
+        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Finalizar no WhatsApp
+      </button>
+      <button type="button" class="btn btn--ghost btn--full" id="cartBtnContinue">Continuar comprando</button>
     </div>
   </div>
 
@@ -512,7 +514,8 @@
     <i class="fa-solid fa-chevron-up"></i>
   </button>
 
-  <script src="js/config.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/cart-store.js?v=9"></script>
+  <script src="js/config.js?v=9"></script>
+  <script src="js/main.js?v=9"></script>
 </body>
 </html>

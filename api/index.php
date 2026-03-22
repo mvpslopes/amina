@@ -58,7 +58,6 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'auth' && ($segments[1] ?? '')
 
 // --- Public ---
 if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '') === 'products') {
-    $rows = $pdo->query('SELECT * FROM products ORDER BY created_at DESC')->fetchAll();
     $allPc = $pdo->query('SELECT product_id, collection_id FROM product_collections')->fetchAll();
     $byProduct = [];
     foreach ($allPc as $pc) {
@@ -69,8 +68,7 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
     foreach ($cols as $c) {
         $colMap[(int) $c['id']] = $c;
     }
-    $out = [];
-    foreach ($rows as $p) {
+    $attachCols = function (array $p) use ($byProduct, $colMap): array {
         $p['price'] = isset($p['price']) ? (float) $p['price'] : 0.0;
         $ids = $byProduct[$p['id']] ?? [];
         $collections = [];
@@ -80,7 +78,25 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
             }
         }
         $p['collections'] = $collections;
-        $out[] = $p;
+
+        return $p;
+    };
+
+    if (isset($segments[2]) && ctype_digit((string) $segments[2])) {
+        $pid = (int) $segments[2];
+        $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
+        $st->execute([$pid]);
+        $row = $st->fetch();
+        if (!$row) {
+            json_out(404, ['error' => 'Produto não encontrado']);
+        }
+        json_out(200, $attachCols($row));
+    }
+
+    $rows = $pdo->query('SELECT * FROM products ORDER BY created_at DESC')->fetchAll();
+    $out = [];
+    foreach ($rows as $p) {
+        $out[] = $attachCols($p);
     }
     json_out(200, $out);
 }
@@ -93,7 +109,8 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
 
 // --- Upload (auth) ---
 if ($method === 'POST' && ($segments[0] ?? '') === 'upload') {
-    require_auth($CONFIG, $pdo);
+    $up = require_auth($CONFIG, $pdo);
+    require_editor($up);
     if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         json_out(400, ['error' => 'Envie um arquivo de imagem (jpeg, png, webp, gif)']);
     }
@@ -143,12 +160,16 @@ if (($segments[0] ?? '') === 'users') {
         $body = json_body();
         $uname = trim((string) ($body['username'] ?? ''));
         $password = (string) ($body['password'] ?? '');
-        $role = ($body['role'] ?? '') === 'admin' ? 'admin' : null;
+        $rawRole = strtolower(trim((string) ($body['role'] ?? 'admin')));
+        if ($rawRole === 'root') {
+            json_out(400, ['error' => 'Não é permitido criar usuário root por aqui.']);
+        }
+        $role = in_array($rawRole, ['admin', 'operador'], true) ? $rawRole : null;
         if ($uname === '' || $password === '') {
             json_out(400, ['error' => 'Usuário e senha são obrigatórios']);
         }
         if (!$role) {
-            json_out(400, ['error' => 'Role inválida. Use "admin".']);
+            json_out(400, ['error' => 'Perfil inválido. Use "admin" ou "operador".']);
         }
         if (strlen($uname) < 2) {
             json_out(400, ['error' => 'Nome de usuário muito curto']);
@@ -216,6 +237,7 @@ if (($segments[0] ?? '') === 'collections') {
         json_out(200, $row);
     }
     if ($method === 'POST' && count($segments) === 1) {
+        require_editor($authUser);
         $body = json_body();
         $name = trim((string) ($body['name'] ?? ''));
         if ($name === '') {
@@ -240,6 +262,7 @@ if (($segments[0] ?? '') === 'collections') {
         json_out(201, $st->fetch());
     }
     if ($method === 'PUT' && isset($segments[1]) && ctype_digit($segments[1])) {
+        require_editor($authUser);
         $id = (int) $segments[1];
         $st = $pdo->prepare('SELECT * FROM collections WHERE id = ?');
         $st->execute([$id]);
@@ -271,6 +294,7 @@ if (($segments[0] ?? '') === 'collections') {
         json_out(200, $st->fetch());
     }
     if ($method === 'DELETE' && isset($segments[1]) && ctype_digit($segments[1])) {
+        require_editor($authUser);
         $id = (int) $segments[1];
         $st = $pdo->prepare('SELECT id FROM collections WHERE id = ?');
         $st->execute([$id]);
@@ -353,6 +377,7 @@ if (($segments[0] ?? '') === 'products') {
         json_out(200, $out[0]);
     }
     if ($method === 'POST' && count($segments) === 1) {
+        require_editor($authUser);
         $body = json_body();
         $name = trim((string) ($body['name'] ?? ''));
         if ($name === '') {
@@ -387,6 +412,7 @@ if (($segments[0] ?? '') === 'products') {
         json_out(201, $out[0]);
     }
     if ($method === 'PUT' && isset($segments[1]) && ctype_digit($segments[1])) {
+        require_editor($authUser);
         $id = (int) $segments[1];
         $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
         $st->execute([$id]);
@@ -429,6 +455,7 @@ if (($segments[0] ?? '') === 'products') {
         json_out(200, $out[0]);
     }
     if ($method === 'DELETE' && isset($segments[1]) && ctype_digit($segments[1])) {
+        require_editor($authUser);
         $id = (int) $segments[1];
         $st = $pdo->prepare('SELECT id FROM products WHERE id = ?');
         $st->execute([$id]);

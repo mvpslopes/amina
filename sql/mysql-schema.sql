@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(190) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('root', 'admin') NOT NULL,
+  role ENUM('root', 'admin', 'operador') NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_by INT UNSIGNED NULL,
   UNIQUE KEY uk_users_username (username),

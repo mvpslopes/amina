@@ -57,8 +57,15 @@ O host costuma ser `localhost` quando o Node roda no **mesmo servidor** que o My
 
 | Perfil            | Produtos & coleções | Criar usuários |
 |-------------------|----------------------|----------------|
-| **Root**          | Sim                  | Sim (só admins) |
-| **Administrador** | Sim                  | Não            |
+| **Root**          | Sim (editar)         | Sim (admin ou operador) |
+| **Administrador** | Sim (editar)         | Não            |
+| **Operador**      | Só visualizar        | Não            |
+
+Novos usuários são criados pelo **Root** no painel, com escolha do perfil **Administrador** ou **Operador**. Em bases **MySQL** já existentes, execute uma vez o script [`sql/migration-add-operador-role.sql`](sql/migration-add-operador-role.sql) (o `npm start` com MySQL também tenta aplicar o `ALTER` automaticamente).
+
+## Vitrine — pedido por WhatsApp
+
+O carrinho abre o WhatsApp com o resumo do pedido. O número (só dígitos, DDI 55) fica em [`js/config.js`](js/config.js) (`AMINA_WHATSAPP`). Pode sobrescrever antes de carregar o config em `index.html` se precisar.
 
 O usuário **root** inicial é criado automaticamente na primeira execução (credenciais fornecidas separadamente ao time — não commitar senhas).
 
@@ -68,11 +75,11 @@ Todas as rotas abaixo exigem header `Authorization: Bearer <token>` exceto login
 
 - `POST /api/auth/login` — `{ "username", "password" }`
 - `GET /api/auth/me`
-- `GET|POST /api/users` — **apenas Root** (POST cria apenas perfil `admin`)
+- `GET|POST /api/users` — **apenas Root** (POST cria perfil `admin` ou `operador`)
 - `DELETE /api/users/:id` — **Root** (não remove root)
-- `GET|POST|PUT|DELETE /api/products` — Root e Admin
-- `GET|POST|PUT|DELETE /api/collections` — Root e Admin
-- `POST /api/upload` — upload de imagem (multipart `file`)
+- `GET /api/products` e `GET /api/collections` — Root, Admin e Operador
+- `POST|PUT|DELETE /api/products` e coleções — **Root e Admin** (Operador: 403)
+- `POST /api/upload` — **Root e Admin** (multipart `file`)
 
 ### Catálogo público (sem login)
 

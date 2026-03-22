@@ -1,20 +1,33 @@
 /**
  * Base da API para a vitrine (mesma lógica do painel: admin/js/config.js).
  *
- * - Não definido: calcula a pasta do site (útil em subpastas, ex.: /amina/index.html → API em /amina/api/...).
+ * - Não definido: calcula a pasta do site (subpastas e /pasta sem barra final).
  * - Para forçar: antes deste script, em index.html:
  *     <script>window.AMINA_API_BASE = 'https://seudominio.com';</script>
  * - Valor vazio '' = URLs relativas à raiz do domínio (só faz sentido se a página estiver na raiz).
  */
 (function (w) {
+  /** Pasta do site na URL (evita bug de URL('.') com /pasta sem / no fim). */
+  function publicSiteBasePath(pathname) {
+    var p = pathname || '/';
+    var segs = p.split('/').filter(function (s) {
+      return s.length > 0;
+    });
+    if (!segs.length) return '';
+    var last = segs[segs.length - 1];
+    if (/\.(html?|php|aspx|htm|jsp)$/i.test(last)) {
+      segs.pop();
+    }
+    return segs.length ? '/' + segs.join('/') : '';
+  }
+
   if (!('AMINA_API_BASE' in w)) {
     try {
       if (w.location.protocol === 'file:') {
         w.AMINA_API_BASE = '';
       } else {
-        var u = new URL('.', w.location.href);
-        var path = u.pathname.replace(/\/+$/, '');
-        w.AMINA_API_BASE = w.location.origin + path;
+        var sub = publicSiteBasePath(w.location.pathname);
+        w.AMINA_API_BASE = w.location.origin + sub;
       }
     } catch (e) {
       w.AMINA_API_BASE = '';
@@ -27,4 +40,13 @@
     if (!b) return p;
     return b + p;
   };
+
+  /**
+   * WhatsApp para finalizar pedido (só dígitos, com DDI 55).
+   * Pode definir antes deste script: window.AMINA_WHATSAPP = '5531999999999';
+   */
+  if (!('AMINA_WHATSAPP' in w)) {
+    w.AMINA_WHATSAPP = '5531983614819';
+  }
+  w.AMINA_WHATSAPP = String(w.AMINA_WHATSAPP || '').replace(/\D/g, '');
 })(window);

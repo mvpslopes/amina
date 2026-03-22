@@ -2,7 +2,7 @@
 
 const express = require('express');
 const db = require('../db');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireEditor } = require('../middleware/auth');
 const { uniqueSlug } = require('../utils/slug');
 
 const router = express.Router();
@@ -33,7 +33,7 @@ router.get('/:id', async (req, res) => {
   res.json({ ...row, products });
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireEditor, async (req, res) => {
   const { name, description, image_url } = req.body || {};
   if (!name || String(name).trim().length === 0) {
     return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
   res.status(201).json(row);
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEditor, async (req, res) => {
   const id = Number(req.params.id);
   const existing = await db.get('SELECT * FROM collections WHERE id = ?', [id]);
   if (!existing) return res.status(404).json({ error: 'Coleção não encontrada' });
@@ -96,7 +96,7 @@ router.put('/:id', async (req, res) => {
   res.json(row);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireEditor, async (req, res) => {
   const id = Number(req.params.id);
   const existing = await db.get('SELECT id FROM collections WHERE id = ?', [id]);
   if (!existing) return res.status(404).json({ error: 'Coleção não encontrada' });
