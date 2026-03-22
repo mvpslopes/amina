@@ -71,8 +71,14 @@ function closeMobileMenu() {
   document.body.style.overflow = '';
 }
 
+window.openAminaMobileMenu = openMobileMenu;
+window.closeAminaMobileMenu = closeMobileMenu;
+
 if (menuBtn && mobileMenu && overlay) {
-  menuBtn.addEventListener('click', openMobileMenu);
+  menuBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openMobileMenu();
+  });
   if (closeMenu) closeMenu.addEventListener('click', closeMobileMenu);
   overlay.addEventListener('click', () => {
     closeMobileMenu();

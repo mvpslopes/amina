@@ -59,12 +59,26 @@
     if (statUsersCard) statUsersCard.hidden = false;
   }
 
-  /* ===== LOGOUT ===== */
-  document.getElementById('btnLogout').addEventListener('click', () => {
-    localStorage.removeItem('amina_token');
-    localStorage.removeItem('amina_user');
-    window.location.replace('/admin/login.html');
-  });
+  /* ===== LOGOUT =====
+   * window.aminaLogout é definida no <head> de index.html (path correto para /admin e /admin/index.html).
+   * Aqui só reforçamos após carregar o restante do script.
+   */
+  if (typeof window.aminaLogout !== 'function') {
+    window.aminaLogout = function () {
+      try {
+        localStorage.removeItem('amina_token');
+        localStorage.removeItem('amina_user');
+      } catch (e) {
+        /* ignore */
+      }
+      var p = location.pathname || '';
+      var d;
+      if (p.endsWith('/')) d = p;
+      else if (/\.[a-z0-9]+$/i.test((p.split('/').pop()) || '')) d = p.replace(/\/[^/]+$/, '/');
+      else d = p + '/';
+      location.replace(d + 'login.html');
+    };
+  }
 
   /* ===== SIDEBAR (mobile) ===== */
   const sidebar  = document.getElementById('adminSidebar');
@@ -319,14 +333,14 @@
     tbody.innerHTML = filtered.map(p => {
       const cols = (p.collections || []).map(c => escapeHtml(c.name)).join(', ') || '—';
       return `<tr>
-        <td class="td-code">${p.id}</td>
-        <td>${thumb(p.image_url)}</td>
-        <td class="td-name"><strong>${escapeHtml(p.name)}</strong>${p.description ? `<br><small class="muted">${escapeHtml(p.description.slice(0, 60))}${p.description.length > 60 ? '…' : ''}</small>` : ''}</td>
-        <td>${money(p.price)}</td>
-        <td>${escapeHtml(p.category || '—')}</td>
-        <td>${badgeChip(p.badge)}</td>
-        <td class="muted">${cols}</td>
-        <td class="row-actions editor-only">
+        <td class="td-code" data-label="Cód.">${p.id}</td>
+        <td class="td-thumb-cell" data-label="">${thumb(p.image_url)}</td>
+        <td class="td-name" data-label="Nome"><strong>${escapeHtml(p.name)}</strong>${p.description ? `<br><small class="muted">${escapeHtml(p.description.slice(0, 60))}${p.description.length > 60 ? '…' : ''}</small>` : ''}</td>
+        <td data-label="Preço">${money(p.price)}</td>
+        <td data-label="Categoria">${escapeHtml(p.category || '—')}</td>
+        <td data-label="Badge">${badgeChip(p.badge)}</td>
+        <td class="muted" data-label="Coleções">${cols}</td>
+        <td class="row-actions td-actions-cell editor-only" data-label="">
           <button type="button" class="link-btn" data-edit-product="${p.id}"><i class="fa-solid fa-pen"></i> Editar</button>
           <button type="button" class="link-btn danger" data-del-product="${p.id}"><i class="fa-solid fa-trash"></i> Excluir</button>
         </td>
@@ -356,11 +370,11 @@
     if (tableEl) tableEl.style.display = list.length > 0 ? '' : 'none';
 
     tbody.innerHTML = list.map(c => `<tr>
-      <td>${thumb(c.image_url)}</td>
-      <td><strong>${escapeHtml(c.name)}</strong></td>
-      <td><code>${escapeHtml(c.slug)}</code></td>
-      <td>${c.product_count ?? 0}</td>
-      <td class="row-actions editor-only">
+      <td class="td-thumb-cell" data-label="">${thumb(c.image_url)}</td>
+      <td data-label="Nome"><strong>${escapeHtml(c.name)}</strong></td>
+      <td data-label="Slug"><code>${escapeHtml(c.slug)}</code></td>
+      <td data-label="Produtos">${c.product_count ?? 0}</td>
+      <td class="row-actions td-actions-cell editor-only" data-label="">
         <button type="button" class="link-btn" data-edit-col="${c.id}"><i class="fa-solid fa-pen"></i> Editar</button>
         <button type="button" class="link-btn danger" data-del-col="${c.id}"><i class="fa-solid fa-trash"></i> Excluir</button>
       </td>

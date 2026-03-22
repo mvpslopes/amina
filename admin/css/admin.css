@@ -280,9 +280,9 @@ body {
 .admin-topbar {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   min-height: 56px;
-  padding: 0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
+  padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
   padding-top: env(safe-area-inset-top);
   min-height: calc(56px + env(safe-area-inset-top));
   background: #fff;
@@ -298,6 +298,11 @@ body {
   font-weight: 700;
   color: var(--wine);
   letter-spacing: 0.02em;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .admin-topbar__menu {
   display: none;
@@ -314,6 +319,36 @@ body {
   flex-shrink: 0;
 }
 .admin-topbar__menu:hover { background: #f0ebe3; }
+
+/* Sair — sempre visível no canto superior direito (mobile e desktop) */
+.admin-topbar__logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(74, 17, 36, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--wine);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 2;
+}
+.admin-topbar__logout:hover {
+  background: rgba(74, 17, 36, 0.06);
+  border-color: var(--wine);
+}
+.admin-topbar__logout i { font-size: 0.95rem; }
 
 /* Conteúdo colado à sidebar: sem margin auto (que centralizava e abria espaço à esquerda em telas largas) */
 .admin-main {
@@ -332,13 +367,23 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.45);
-  z-index: 250;
+  /* Entre o conteúdo e a sidebar aberta — precisa receber toque para fechar */
+  z-index: 430;
   backdrop-filter: blur(2px);
 }
 .admin-sidebar-backdrop[hidden] { display: none !important; }
 
 @media (max-width: 900px) {
   .admin-shell { position: relative; }
+  /*
+   * A sidebar fixa tinha z-index 300 e o conteúdo não tinha — a camada da sidebar
+   * ficava por cima de toda a área principal em alguns browsers, bloqueando o botão Sair.
+   * Conteúdo (400) > sidebar fechada (300); sidebar aberta (500) > backdrop (430) > conteúdo.
+   */
+  .admin-content {
+    position: relative;
+    z-index: 400;
+  }
   .admin-sidebar {
     position: fixed;
     left: 0;
@@ -348,19 +393,23 @@ body {
     transform: translateX(-100%);
     transition: transform 0.28s ease;
     box-shadow: none;
-  }
-  .admin-sidebar.is-open {
-    transform: translateX(0);
-    box-shadow: 8px 0 32px rgba(0,0,0,.2);
-  }
-  .admin-topbar__menu {
-    display: flex;
-  }
-  .admin-sidebar {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     width: min(300px, 88vw);
     max-width: min(300px, 88vw);
+  }
+  /* Fechada: não intercepta toques na área principal (topbar / Sair) */
+  .admin-sidebar:not(.is-open) {
+    pointer-events: none;
+  }
+  .admin-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0,0,0,.2);
+    z-index: 500;
+    pointer-events: auto;
+  }
+  .admin-topbar__menu {
+    display: flex;
   }
   .admin-sidebar .admin-tab {
     min-height: 48px;
@@ -590,15 +639,15 @@ body {
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
-/* Mobile: deslizar horizontalmente em tabelas largas */
+/* Mobile: tabelas genéricas — scroll horizontal (exceto .table-wrap--stack-mobile) */
 @media (max-width: 900px) {
-  .table-wrap {
+  .table-wrap:not(.table-wrap--stack-mobile) {
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
   }
-  .table-wrap .data-table {
+  .table-wrap:not(.table-wrap--stack-mobile) .data-table {
     min-width: 720px;
   }
   .row-actions {
@@ -610,6 +659,93 @@ body {
   }
   .row-actions .link-btn {
     margin-left: 0;
+  }
+}
+
+/* Mobile: produtos/coleções — cartões empilhados, sem scroll lateral; ações logo após o nome */
+@media (max-width: 900px) {
+  .table-wrap--stack-mobile {
+    overflow-x: visible;
+  }
+  .table-wrap--stack-mobile .data-table {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  .table-wrap--stack-mobile thead {
+    display: none;
+  }
+  .table-wrap--stack-mobile tbody tr {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .table-wrap--stack-mobile tbody td {
+    display: block;
+    width: 100% !important;
+    padding: 0.45rem 0;
+    border: none;
+    text-align: left !important;
+    vertical-align: top;
+  }
+  .table-wrap--stack-mobile tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+  .table-wrap--stack-mobile tbody td.td-thumb-cell::before,
+  .table-wrap--stack-mobile tbody td.td-actions-cell::before {
+    display: none;
+  }
+  .table-wrap--stack-mobile tbody td.td-thumb-cell {
+    align-self: flex-start;
+  }
+  .table-wrap--stack-mobile tbody td.td-name {
+    padding-bottom: 0.65rem;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid #f0ede8;
+  }
+  .table-wrap--stack-mobile .row-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-self: stretch;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .table-wrap--stack-mobile .row-actions .link-btn {
+    margin-left: 0;
+  }
+  /* Ordem: miniatura → nome → Editar/Excluir → código → demais campos */
+  .table-wrap--stack-mobile #tableProducts .td-thumb-cell { order: 1; }
+  .table-wrap--stack-mobile #tableProducts .td-name { order: 2; }
+  .table-wrap--stack-mobile #tableProducts .td-actions-cell { order: 3; }
+  .table-wrap--stack-mobile #tableProducts .td-code { order: 4; }
+  .table-wrap--stack-mobile #tableProducts tbody td:nth-child(4) { order: 5; }
+  .table-wrap--stack-mobile #tableProducts tbody td:nth-child(5) { order: 6; }
+  .table-wrap--stack-mobile #tableProducts tbody td:nth-child(6) { order: 7; }
+  .table-wrap--stack-mobile #tableProducts tbody td:nth-child(7) { order: 8; }
+  .table-wrap--stack-mobile #tableWrapCollections .td-thumb-cell { order: 1; }
+  .table-wrap--stack-mobile #tableWrapCollections tbody td:nth-child(2) { order: 2; }
+  .table-wrap--stack-mobile #tableWrapCollections .td-actions-cell { order: 3; }
+  .table-wrap--stack-mobile #tableWrapCollections tbody td:nth-child(3) { order: 4; }
+  .table-wrap--stack-mobile #tableWrapCollections tbody td:nth-child(4) { order: 5; }
+
+  .admin-sidebar__logout {
+    display: none;
   }
 }
 .data-table {
@@ -957,6 +1093,11 @@ body {
   gap: .4rem;
   max-height: 130px;
   overflow-y: auto;
+}
+@media (max-width: 680px) {
+  .checkbox-list {
+    max-height: min(240px, 40vh);
+  }
 }
 .chk { display: flex; align-items: center; gap: .5rem; font-size: .85rem; cursor: pointer; }
 

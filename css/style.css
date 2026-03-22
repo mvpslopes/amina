@@ -179,7 +179,7 @@ ul { list-style: none; }
   top: 36px;
   left: 0;
   right: 0;
-  /* Acima do overlay (1000) para o menu hambúrguer e ícones receberem toque com segurança */
+  /* Acima do overlay e do carrinho fechado — hambúrguer e ícones */
   z-index: 1010;
   background: rgba(250, 247, 242, 0.95);
   backdrop-filter: blur(12px);
@@ -304,8 +304,9 @@ ul { list-style: none; }
   background: transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   position: relative;
-  z-index: 2;
+  z-index: 1020;
   flex-shrink: 0;
 }
 .header__menu-btn span {
@@ -322,17 +323,24 @@ ul { list-style: none; }
   top: 0;
   left: 0;
   height: 100vh;
+  height: 100dvh;
   width: min(320px, 85vw);
   background: var(--wine);
-  z-index: 1100;
+  /* Fechado: abaixo do header (1010) para o hambúrguer receber toque */
+  z-index: 1000;
   padding: 6rem 2.5rem 3rem;
+  padding-top: max(6rem, env(safe-area-inset-top));
   transform: translateX(-100%);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   gap: 3rem;
 }
-.mobile-menu.open { transform: translateX(0); }
+.mobile-menu.open {
+  transform: translateX(0);
+  /* Aberto: acima do overlay (1180) e do header */
+  z-index: 1220;
+}
 .mobile-menu__close {
   position: absolute;
   top: 1.5rem;
@@ -385,7 +393,8 @@ ul { list-style: none; }
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 1000;
+  /* Acima do header (1010) para escurecer tudo ao abrir menu/carrinho */
+  z-index: 1180;
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -1318,16 +1327,28 @@ ul { list-style: none; }
   top: 0;
   right: 0;
   height: 100vh;
+  height: 100dvh;
   width: min(420px, 95vw);
   background: var(--white);
-  z-index: 1100;
   transform: translateX(100%);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   box-shadow: -8px 0 40px rgba(0,0,0,0.15);
 }
-.cart-sidebar.open { transform: translateX(0); }
+/*
+ * Fechado: z-index baixo (abaixo do header 1010) — o painel full-width no mobile
+ * ficava com camada 1210 por cima do header e bloqueava o hambúrguer em vários browsers.
+ */
+.cart-sidebar:not(.open) {
+  z-index: 1;
+  pointer-events: none;
+}
+.cart-sidebar.open {
+  z-index: 1210;
+  transform: translateX(0);
+  pointer-events: auto;
+}
 .cart-sidebar__header {
   padding: 1.5rem 2rem;
   border-bottom: 1px solid var(--gray-light);
@@ -1556,12 +1577,24 @@ ul { list-style: none; }
 
 /* --- Tablet --- */
 @media (max-width: 768px) {
-  /* Header */
-  .header { top: 32px; }
+  /* Header — acima do carrinho fechado e do conteúdo; hambúrguer deve receber toque */
+  .header {
+    top: 32px;
+    z-index: 2000;
+  }
   .header.scrolled { top: 0; }
   .header__inner { height: 60px; padding: 0 1.25rem; }
   .header__nav { display: none; }
   .header__menu-btn { display: flex; }
+  .mobile-menu.open {
+    z-index: 2200;
+  }
+  .overlay.active {
+    z-index: 2100;
+  }
+  .toast {
+    z-index: 3100;
+  }
   .header__logo { height: 28px; }
   .announcement-bar { font-size: 0.65rem; padding: 0.5rem 1rem; }
 

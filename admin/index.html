@@ -8,7 +8,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="/admin/css/admin.css?v=7" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=10" />
+  <script>
+    /* Sair: precisa funcionar antes do admin.js e com path /admin ou /admin/index.html */
+    (function () {
+      window.aminaLogout = function () {
+        try {
+          localStorage.removeItem('amina_token');
+          localStorage.removeItem('amina_user');
+        } catch (e) {}
+        var p = location.pathname || '';
+        var d;
+        if (p.endsWith('/')) d = p;
+        else if (/\.[a-z0-9]+$/i.test((p.split('/').pop()) || '')) d = p.replace(/\/[^/]+$/, '/');
+        else d = p + '/';
+        location.replace(d + 'login.html');
+      };
+    })();
+  </script>
 </head>
 <body class="admin-body">
 
@@ -43,7 +60,7 @@
         <a href="/" class="admin-sidebar__link-site" target="_blank" rel="noopener">
           <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver loja
         </a>
-        <button type="button" class="admin-sidebar__logout" id="btnLogout">
+        <button type="button" class="admin-sidebar__logout" id="btnLogout" onclick="window.aminaLogout&&window.aminaLogout();return false;">
           <i class="fa-solid fa-right-from-bracket"></i> Sair
         </button>
       </div>
@@ -55,6 +72,10 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <h1 class="admin-topbar__title" id="pageTitle">Produtos</h1>
+        <button type="button" class="admin-topbar__logout" id="btnLogoutTop" aria-label="Sair da conta" onclick="window.aminaLogout&&window.aminaLogout();return false;">
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+          <span>Sair</span>
+        </button>
       </header>
 
       <main class="admin-main">
@@ -143,7 +164,7 @@
           </button>
         </div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap table-wrap--stack-mobile" id="tableWrapProducts">
         <table class="data-table" id="tableProducts">
           <thead>
             <tr>
@@ -177,7 +198,7 @@
           <i class="fa-solid fa-plus"></i> Nova coleção
         </button>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap table-wrap--stack-mobile" id="tableWrapCollections">
         <table class="data-table">
           <thead>
             <tr>
