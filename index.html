@@ -16,7 +16,7 @@
 
   <link rel="icon" type="image/png" href="logo/favicon.png" />
   <link rel="apple-touch-icon" href="logo/favicon.png" />
-  <link rel="stylesheet" href="css/style.css?v=13" />
+  <link rel="stylesheet" href="css/style.css?v=14" />
 </head>
 <body class="splash-active">
 
@@ -42,13 +42,27 @@
   <script>
     (function () {
       var splash = document.getElementById('splash-screen');
+      var SPLASH_MIN_MS = 5000;
+      var STORAGE_KEY = 'amina_splash_seen';
+      var finished = false;
+
       function hideSplash() {
+        if (finished) return;
+        finished = true;
         splash.classList.add('splash--hidden');
         document.body.classList.remove('splash-active');
+        try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
         setTimeout(function () { splash.remove(); }, 900);
       }
-      // Mantém a splash por um tempo mínimo (para não sumir antes no mobile)
-      var SPLASH_MIN_MS = 5000;
+
+      // Se o usuário já viu a splash nesta sessão, não exibe novamente ao navegar.
+      try {
+        if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+          hideSplash();
+          return;
+        }
+      } catch (e) {}
+
       var splashStart = Date.now();
       var timer = setTimeout(hideSplash, SPLASH_MIN_MS);
       window.addEventListener('load', function () {
@@ -535,7 +549,7 @@
       </div>
 
       <div class="footer__bottom">
-        <p>&copy; 2026 ÂMINA. Todos os direitos reservados.</p>
+        <p>&copy; 2026 ÂMINA. Todos os direitos reservados.<br />desenvolvido por <a href="https://mvlopes.com.br/" target="_blank" rel="noopener noreferrer">MVLOPES</a> e apote.</p>
         <div class="footer__payments">
           <i class="fa-brands fa-cc-visa"></i>
           <i class="fa-brands fa-cc-mastercard"></i>

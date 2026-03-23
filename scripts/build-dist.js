@@ -56,6 +56,7 @@ const copies = [
   ['assets', 'assets'],
   ['admin', 'admin'],
   ['api', 'api'],
+  ['public', 'public'],
 ];
 
 for (const [from, to] of copies) {
