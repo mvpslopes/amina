@@ -228,7 +228,9 @@
         let q = parseInt(String(qtyInput && qtyInput.value ? qtyInput.value : '1'), 10);
         if (!Number.isFinite(q) || q < 1) q = 1;
         if (q > 99) q = 99;
-        window.addToCart(name, priceNum, pid, q);
+        const main = document.getElementById('productMainImg');
+        const img = main && main.getAttribute('src') ? String(main.getAttribute('src')) : '';
+        window.addToCart(name, priceNum, pid, q, img || null);
       });
     }
   }

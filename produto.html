@@ -11,9 +11,51 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <link rel="icon" type="image/png" href="logo/favicon.png" />
+  <link rel="apple-touch-icon" href="logo/favicon.png" />
+  <link rel="stylesheet" href="css/style.css?v=13" />
 </head>
-<body>
+<body class="splash-active">
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splash-screen">
+    <span class="splash__corner splash__corner--tl"></span>
+    <span class="splash__corner splash__corner--tr"></span>
+    <span class="splash__corner splash__corner--bl"></span>
+    <span class="splash__corner splash__corner--br"></span>
+    <div class="splash__inner">
+      <p class="splash__stars">✦ &nbsp; ✦ &nbsp; ✦</p>
+      <img src="logo/logo-amina-3.png" alt="ÂMINA" class="splash__logo" />
+      <div class="splash__line"></div>
+      <p class="splash__tagline">Moda Gringa de Força e Superação</p>
+      <div class="splash__dots">
+        <span class="splash__dot"></span>
+        <span class="splash__dot"></span>
+        <span class="splash__dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var splash = document.getElementById('splash-screen');
+      function hideSplash() {
+        splash.classList.add('splash--hidden');
+        document.body.classList.remove('splash-active');
+        setTimeout(function () { splash.remove(); }, 900);
+      }
+      // Mantém a splash por um tempo mínimo (para não sumir antes no mobile)
+      var SPLASH_MIN_MS = 5000;
+      var splashStart = Date.now();
+      var timer = setTimeout(hideSplash, SPLASH_MIN_MS);
+      window.addEventListener('load', function () {
+        var elapsed = Date.now() - splashStart;
+        clearTimeout(timer);
+        var wait = Math.max(0, SPLASH_MIN_MS - elapsed);
+        setTimeout(hideSplash, wait);
+      });
+    })();
+  </script>
 
   <div class="announcement-bar">
     <p>Frete grátis acima de R$499 &nbsp;|&nbsp; Novas coleções toda semana &nbsp;|&nbsp; <a href="index.html#sobre">Conheça a história de Âmina</a></p>
@@ -27,7 +69,7 @@
       </button>
 
       <a href="index.html" class="header__logo">
-        <img src="assets/images/logo-vinho.png" alt="ÂMINA" class="header__logo-img" />
+        <img src="logo/logo-amina-4.png" alt="ÂMINA" class="header__logo-img" />
       </a>
 
       <nav class="header__nav" id="headerNav">
@@ -168,7 +210,7 @@
 
   <script src="js/cart-store.js?v=12"></script>
   <script src="js/config.js?v=12"></script>
-  <script src="js/main.js?v=12"></script>
+  <script src="js/main.js?v=13"></script>
   <script src="js/produto.js?v=12"></script>
 </body>
 </html>

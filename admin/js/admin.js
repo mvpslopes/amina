@@ -531,28 +531,10 @@
     }
   }
 
-  /** Celular / touch: nunca usar `multiple` no input — muitos browsers só entregam 1 ficheiro ou bloqueiam. Uma foto por toque, repetir até 5. */
-  function isTouchOrMobileDevice() {
-    if (typeof window.matchMedia === 'function') {
-      try {
-        if (window.matchMedia('(pointer: coarse)').matches) return true;
-        if (window.matchMedia('(max-width: 900px)').matches) return true;
-      } catch (e) {
-        /* ignore */
-      }
-    }
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent || ''
-    );
-  }
-
   function applyProductFileMultipleAttr() {
     const inp = document.getElementById('productFile');
     if (!inp) return;
-    if (isTouchOrMobileDevice()) {
-      inp.removeAttribute('multiple');
-      return;
-    }
+    /* Permite múltipla seleção quando o browser suportar. Em alguns celulares ele vai devolver 1 por vez mesmo com `multiple` — nesse caso o usuário toca novamente. */
     if (gallerySlotsLeft() > 1) {
       inp.setAttribute('multiple', 'multiple');
     } else {
@@ -590,9 +572,9 @@
       <span class="product-gallery-editor__idx">${i + 1}</span>
       <img src="${escapeHtml(url)}" alt="" />
       <div class="product-gallery-editor__actions">
-        <button type="button" class="btn btn--icon btn--ghost" data-move="-1" title="Subir" aria-label="Subir"><i class="fa-solid fa-arrow-up"></i></button>
-        <button type="button" class="btn btn--icon btn--ghost" data-move="1" title="Descer" aria-label="Descer"><i class="fa-solid fa-arrow-down"></i></button>
-        <button type="button" class="btn btn--icon btn--ghost product-gallery-editor__remove" data-remove title="Remover" aria-label="Remover"><i class="fa-solid fa-trash"></i></button>
+        <button type="button" class="btn btn--icon btn--ghost" data-move="-1" title="Subir" aria-label="Subir">↑</button>
+        <button type="button" class="btn btn--icon btn--ghost" data-move="1" title="Descer" aria-label="Descer">↓</button>
+        <button type="button" class="btn btn--icon btn--ghost product-gallery-editor__remove" data-remove title="Remover" aria-label="Remover">✕</button>
       </div>
     </li>`).join('');
     ul.querySelectorAll('[data-move]').forEach(btn => {

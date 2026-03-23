@@ -92,6 +92,9 @@ if (menuBtn && mobileMenu && overlay) {
 /* ===== CART ===== */
 function openCartSidebar() {
   if (!cartSidebar || !overlay) return;
+  /* Alguns carrinhos antigos no localStorage vêm sem `image_url`.
+   * Ao abrir, tentamos completar isso com o catálogo para as fotos aparecerem. */
+  warmCartImagesFromAPI().catch(() => {});
   closeCartSidebar._skip = false;
   cartSidebar.classList.add('open');
   overlay.classList.add('active');
@@ -166,9 +169,13 @@ function renderCartItems() {
     const codeLine = item.productId
       ? `<p class="cart-item__code">Cód. #${escapeHtml(item.productId)}</p>`
       : '';
+    const imgUrl = item.image_url ? resolveMediaUrl(item.image_url) : '';
+    const thumbHtml = imgUrl
+      ? `<img class="cart-item__thumb" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.style.background='${colors[i % colors.length]}';" />`
+      : `<div class="cart-item__thumb" style="background: ${colors[i % colors.length]}; border-radius: 4px;"></div>`;
     return `
     <div class="cart-item">
-      <div class="cart-item__thumb" style="background: ${colors[i % colors.length]}; border-radius: 4px;"></div>
+      ${thumbHtml}
       <div class="cart-item__info">
         <p class="cart-item__name">${escapeHtml(item.name)}</p>
         ${codeLine}
@@ -187,10 +194,11 @@ function renderCartItems() {
   }).join('');
 }
 
-function addToCart(name, price, productId, qtyArg) {
+function addToCart(name, price, productId, qtyArg, imageUrlArg) {
   const pr = parseFloat(price);
   const safePrice = Number.isFinite(pr) ? pr : 0;
   const pid = productId != null && productId !== '' ? String(productId) : null;
+  const img = imageUrlArg != null && String(imageUrlArg).trim() !== '' ? String(imageUrlArg).trim() : null;
   let addQty = parseInt(String(qtyArg), 10);
   if (!Number.isFinite(addQty) || addQty < 1) addQty = 1;
   if (addQty > 99) addQty = 99;
@@ -203,6 +211,9 @@ function addToCart(name, price, productId, qtyArg) {
   }
   if (existing) {
     existing.qty += addQty;
+    if (!existing.image_url && img) {
+      existing.image_url = img;
+    }
   } else {
     cart.push({
       id: itemIdCounter++,
@@ -210,6 +221,7 @@ function addToCart(name, price, productId, qtyArg) {
       name,
       price: safePrice,
       qty: addQty,
+      image_url: img,
     });
   }
   updateCart();
@@ -343,7 +355,8 @@ function bindProductCard(card) {
     addBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const pid = addBtn.dataset.productId || '';
-      addToCart(addBtn.dataset.name, addBtn.dataset.price, pid || null);
+      const pimg = addBtn.dataset.productImage || '';
+      addToCart(addBtn.dataset.name, addBtn.dataset.price, pid || null, 1, pimg || null);
     });
   });
   const wishBtn = card.querySelector('.product-card__wish');
@@ -479,6 +492,7 @@ function buildProductCard(p) {
     btn.dataset.name = p.name;
     btn.dataset.price = String(p.price);
     btn.dataset.productId = String(p.id);
+    btn.dataset.productImage = rawList[0] || '';
   });
   bindProductCard(div);
   return div;
@@ -525,6 +539,47 @@ function setProductsEmptyMessage(html, showFilters) {
   if (filterWrap) filterWrap.style.display = showFilters ? '' : 'none';
 }
 
+function ensureCartImagesFromCatalog(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+  if (!Array.isArray(cart) || cart.length === 0) return;
+
+  const imageById = new Map();
+  products.forEach((p) => {
+    if (!p || p.id == null) return;
+    const url =
+      Array.isArray(p.images) && p.images.length
+        ? p.images[0]
+        : p.image_url
+          ? p.image_url
+          : null;
+    if (!url) return;
+    imageById.set(String(p.id), resolveMediaUrl(url));
+  });
+
+  let changed = false;
+  cart.forEach((item) => {
+    if (!item || item.image_url) return;
+    if (!item.productId) return;
+    const url = imageById.get(String(item.productId));
+    if (!url) return;
+    item.image_url = url;
+    changed = true;
+  });
+
+  if (changed) updateCart();
+}
+
+async function warmCartImagesFromAPI() {
+  if (!Array.isArray(cart) || cart.length === 0) return;
+  const needsImages = cart.some((it) => it && !it.image_url && it.productId);
+  if (!needsImages) return;
+
+  /* Busca catálogo apenas para completar o carrinho antigo (localStorage). */
+  const { ok, products } = await fetchPublicProductsList();
+  if (!ok) return;
+  ensureCartImagesFromCatalog(products);
+}
+
 /**
  * Tenta várias URLs (subpasta vs raiz) e valida JSON em array — evita falha silenciosa.
  */
@@ -564,14 +619,20 @@ async function fetchPublicProductsList() {
         console.warn('[ÂMINA] Catálogo: JSON inválido', url, parseErr);
         continue;
       }
-      if (!Array.isArray(data)) {
-        console.warn('[ÂMINA] Catálogo: esperado array de produtos, veio', typeof data, url);
+      // Alguns deployments podem devolver array puro ou um objeto { products: [...] }.
+      let productsArr = null;
+      if (Array.isArray(data)) {
+        productsArr = data;
+      } else if (data && Array.isArray(data.products)) {
+        productsArr = data.products;
+      } else {
+        console.warn('[ÂMINA] Catálogo: formato inesperado', typeof data, url);
         continue;
       }
       if (typeof console !== 'undefined' && console.info) {
-        console.info('[ÂMINA] Produtos carregados via', url, '(' + data.length + ' itens)');
+        console.info('[ÂMINA] Produtos carregados via', url, '(' + productsArr.length + ' itens)');
       }
-      return { ok: true, products: data, urlUsed: url };
+      return { ok: true, products: productsArr, urlUsed: url };
     } catch (err) {
       console.warn('[ÂMINA] Catálogo fetch', url, err);
     }
@@ -607,7 +668,7 @@ async function loadProductsFromAPI() {
       );
       return;
     }
-    if (products.length === 0) {
+      if (products.length === 0) {
       setProductsEmptyMessage(
         'Ainda não há produtos na loja (lista vinda da API está vazia).<br>' +
           '<small>Se acabou de cadastrar, confirme no painel e que o mesmo site aponta para o mesmo banco.</small>',
@@ -631,6 +692,7 @@ async function loadProductsFromAPI() {
       productsGrid.appendChild(card);
     });
     if (allBtn) applyFilter('todos', allBtn);
+    ensureCartImagesFromCatalog(products);
     try {
       window.__aminaCatalogUrl = urlUsed;
     } catch (e2) {
@@ -756,3 +818,4 @@ document.head.insertAdjacentHTML('beforeend', `
 /* ===== INIT ===== */
 updateCart();
 loadProductsFromAPI();
+warmCartImagesFromAPI().catch(() => {});

@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="icon" type="image/png" href="/logo/favicon.png" />
+  <link rel="apple-touch-icon" href="/logo/favicon.png" />
   <link rel="stylesheet" href="/admin/css/admin.css?v=13" />
   <script>
     /* Sair: precisa funcionar antes do admin.js e com path /admin ou /admin/index.html */
@@ -355,8 +357,8 @@
                 <input type="file" id="productFile" class="product-file-picker__input" accept="image/*" />
                 <span class="product-file-picker__face btn btn--ghost btn--block">
                   <i class="fa-solid fa-images" aria-hidden="true"></i>
-                  <span class="product-file-picker__title">Adicionar foto</span>
-                  <span class="product-file-picker__sub">Toque de novo para outra (máx. 5)</span>
+                  <span class="product-file-picker__title">Adicionar foto(s)</span>
+                  <span class="product-file-picker__sub">Selecione ate 5 fotos</span>
                 </span>
               </label>
               <span class="upload-status" id="productUploadStatus"></span>
@@ -431,7 +433,7 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script src="/admin/js/config.js"></script>
-  <script src="/admin/js/admin.js"></script>
+  <script src="/admin/js/config.js?v=2"></script>
+  <script src="/admin/js/admin.js?v=2"></script>
 </body>
 </html>

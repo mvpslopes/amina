@@ -1425,6 +1425,9 @@ ul { list-style: none; }
   height: 90px;
   border-radius: var(--radius);
   flex-shrink: 0;
+  display: block;
+  object-fit: cover;
+  object-position: top center;
 }
 .cart-item__info { flex: 1; }
 .cart-item__name {
@@ -2196,4 +2199,172 @@ article.product-detail .product-detail__add.btn-add-cart:hover,
 }
 @media (max-width: 480px) {
   .products__loading { grid-template-columns: 1fr 1fr; gap: 1rem; }
+}
+
+/* =============================================
+   SPLASH SCREEN
+   ============================================= */
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wine-dark);
+  overflow: hidden;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Radial glow dourado no centro */
+#splash-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 50%,
+    rgba(201, 169, 110, 0.10) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Linhas diagonais decorativas (sutil textura) */
+#splash-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      -55deg,
+      transparent,
+      transparent 60px,
+      rgba(201, 169, 110, 0.025) 60px,
+      rgba(201, 169, 110, 0.025) 61px
+    );
+  pointer-events: none;
+}
+
+body.splash-active { overflow: hidden; }
+
+/* --- Conteúdo central --- */
+.splash__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Estrelinhas decorativas acima do nome */
+.splash__stars {
+  font-size: 0.6rem;
+  letter-spacing: 0.6em;
+  color: var(--gold);
+  opacity: 0;
+  margin-bottom: 1.4rem;
+  animation: splashFadeUp 0.5s 0.15s ease forwards;
+}
+
+/* Logo principal (imagem) */
+.splash__logo {
+  display: block;
+  width: min(420px, 78vw);
+  height: auto;
+  opacity: 0;
+  animation: splashFadeUp 0.75s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  /* Inverte para branco — a logo-amina-3 já é branca, mas como fallback */
+  filter: drop-shadow(0 2px 24px rgba(201, 169, 110, 0.18));
+}
+
+/* Linha dourada que expande */
+.splash__line {
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 40%, var(--gold) 60%, transparent 100%);
+  margin: 1.6rem 0 1.5rem;
+  animation: splashLineGrow 0.65s 0.85s ease forwards;
+}
+
+/* Tagline */
+.splash__tagline {
+  font-family: var(--font-body);
+  font-size: clamp(0.55rem, 2vw, 0.68rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  opacity: 0;
+  animation: splashFadeUp 0.5s 1.25s ease forwards;
+}
+
+/* Pontinhos de carregamento */
+.splash__dots {
+  display: flex;
+  gap: 7px;
+  margin-top: 3rem;
+  opacity: 0;
+  animation: splashFadeUp 0.4s 1.6s ease forwards;
+}
+
+.splash__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.3;
+  animation: splashDotPulse 1.1s ease-in-out infinite;
+}
+.splash__dot:nth-child(1) { animation-delay: 1.7s; }
+.splash__dot:nth-child(2) { animation-delay: 1.95s; }
+.splash__dot:nth-child(3) { animation-delay: 2.2s; }
+
+/* Cantos decorativos */
+.splash__corner {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  opacity: 0;
+  animation: splashFadeUp 0.5s 0.8s ease forwards;
+}
+.splash__corner--tl { top: 2rem; left: 2rem; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+.splash__corner--tr { top: 2rem; right: 2rem; border-top: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+.splash__corner--bl { bottom: 2rem; left: 2rem; border-bottom: 1px solid var(--gold); border-left: 1px solid var(--gold); }
+.splash__corner--br { bottom: 2rem; right: 2rem; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); }
+
+/* Estado oculto — saída com fade + leve zoom */
+#splash-screen.splash--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(1.04);
+}
+
+/* --- Keyframes --- */
+@keyframes splashFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splashLineGrow {
+  from { width: 0; opacity: 0; }
+  to   { width: min(260px, 55vw); opacity: 1; }
+}
+
+@keyframes splashDotPulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50%       { opacity: 1;    transform: scale(1.5); }
+}
+
+/* Mobile: cantos menores */
+@media (max-width: 480px) {
+  .splash__corner { width: 32px; height: 32px; }
+  .splash__corner--tl, .splash__corner--tr { top: 1.25rem; }
+  .splash__corner--bl, .splash__corner--br { bottom: 1.25rem; }
+  .splash__corner--tl, .splash__corner--bl { left: 1.25rem; }
+  .splash__corner--tr, .splash__corner--br { right: 1.25rem; }
 }
