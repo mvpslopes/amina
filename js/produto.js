@@ -322,6 +322,23 @@
       articleEl.hidden = false;
       renderProduct(result.product);
       document.title = result.product.name + ' — ÂMINA';
+      const p = result.product;
+      if (typeof window.aminaGaEvent === 'function' && p && p.id != null) {
+        const price = Number(p.price);
+        window.aminaGaEvent('view_item', {
+          currency: 'BRL',
+          value: Number.isFinite(price) ? price : 0,
+          items: [
+            {
+              item_id: String(p.id),
+              item_name: p.name || '',
+              item_category: p.category || '',
+              price: Number.isFinite(price) ? price : 0,
+              currency: 'BRL',
+            },
+          ],
+        });
+      }
     }
   }
 

@@ -1,6 +1,24 @@
 (function (w, d) {
   'use strict';
 
+  w.dataLayer = w.dataLayer || [];
+  w.gtag =
+    w.gtag ||
+    function () {
+      w.dataLayer.push(arguments);
+    };
+
+  /**
+   * Envia evento GA4 (só se AMINA_GA_MEASUREMENT_ID estiver definido).
+   * Usado em main.js / produto.js para produtos e WhatsApp.
+   */
+  w.aminaGaEvent = function (eventName, params) {
+    var id = String(w.AMINA_GA_MEASUREMENT_ID || '').trim();
+    if (!id || !/^G-[A-Z0-9]+$/i.test(id)) return;
+    if (typeof w.gtag !== 'function') return;
+    w.gtag('event', eventName, params || {});
+  };
+
   function loadGa4(measurementId) {
     var id = String(measurementId || '').trim();
     if (!id) return;

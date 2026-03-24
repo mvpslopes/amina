@@ -281,6 +281,15 @@ function finalizeOrderOnWhatsApp() {
     showToast('Seu carrinho está vazio.');
     return;
   }
+  if (typeof window.aminaGaEvent === 'function') {
+    const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    window.aminaGaEvent('whatsapp_checkout', {
+      currency: 'BRL',
+      value: total,
+      items_count: cart.reduce((n, item) => n + item.qty, 0),
+      line_items: cart.length,
+    });
+  }
   const phone = (typeof window.AMINA_WHATSAPP === 'string' && window.AMINA_WHATSAPP) || '';
   if (!phone || phone.length < 10) {
     showToast('WhatsApp da loja não configurado.');
@@ -394,7 +403,31 @@ function handleMediaLoadError(imgEl) {
   }
 }
 
+function trackCatalogProductClick(card) {
+  if (typeof window.aminaGaEvent !== 'function') return;
+  const id = card.dataset.productId;
+  if (!id) return;
+  const price = Number(card.dataset.productPrice);
+  window.aminaGaEvent('select_item', {
+    item_list_id: 'catalogo',
+    item_list_name: 'Novidades',
+    currency: 'BRL',
+    items: [
+      {
+        item_id: String(id),
+        item_name: card.dataset.productName || '',
+        item_category: card.dataset.productCategory || '',
+        price: Number.isFinite(price) ? price : 0,
+        currency: 'BRL',
+      },
+    ],
+  });
+}
+
 function bindProductCard(card) {
+  card.querySelectorAll('a.product-card__img-link, a.product-card__info-link').forEach((a) => {
+    a.addEventListener('click', () => trackCatalogProductClick(card));
+  });
   card.querySelectorAll('.btn-add-cart').forEach((addBtn) => {
     addBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -505,6 +538,10 @@ function buildProductCard(p) {
   const div = document.createElement('div');
   div.className = 'product-card product-card--catalog';
   div.dataset.category = cat;
+  div.dataset.productId = String(p.id);
+  div.dataset.productName = p.name || '';
+  div.dataset.productPrice = String(p.price != null ? p.price : '');
+  div.dataset.productCategory = p.category || '';
   /* Catálogo da API: visível de imediato (evita opacity:0 se o IntersectionObserver não disparar). */
   const detailHref = `produto.html?id=${encodeURIComponent(String(p.id))}`;
   div.innerHTML = `
