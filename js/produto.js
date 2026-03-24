@@ -36,18 +36,62 @@
   function resolveMediaUrl(url) {
     if (url == null || String(url).trim() === '') return '';
     const u = String(url).trim();
-    if (/^https?:\/\//i.test(u) || u.startsWith('data:')) return u;
+    if (u.startsWith('data:')) return u;
     if (u.startsWith('//')) return window.location.protocol + u;
     const base = String(window.AMINA_API_BASE || '').replace(/\/$/, '');
+    const currentOrigin = window.location.origin;
+    const isKnownMediaPath = (p) => {
+      const clean = String(p || '').replace(/^\.\//, '').replace(/^\/+/, '');
+      return /^(uploads|public\/fotos|public\/produtos)\b/i.test(clean);
+    };
+    if (/^https?:\/\//i.test(u)) {
+      try {
+        const parsed = new URL(u);
+        const path = parsed.pathname || '';
+        if (parsed.origin !== currentOrigin && isKnownMediaPath(path)) {
+          const targetBase = base || currentOrigin;
+          return targetBase.replace(/\/$/, '') + path + (parsed.search || '');
+        }
+        return u;
+      } catch {
+        return u;
+      }
+    }
     if (u.startsWith('/')) {
       if (base) return base + u;
-      return window.location.origin + u;
+      return currentOrigin + u;
     }
     if (base) return base + '/' + u.replace(/^\.\//, '');
-    if (u.startsWith('uploads/') || u.indexOf('/') >= 0) {
-      return window.location.origin + '/' + u.replace(/^\//, '');
+    if (isKnownMediaPath(u) || u.indexOf('/') >= 0) {
+      return currentOrigin + '/' + u.replace(/^\/+/, '');
     }
     return u;
+  }
+
+  function handleMediaLoadError(imgEl) {
+    if (!imgEl) return false;
+    if (imgEl.dataset && imgEl.dataset.fallbackTried === '1') return false;
+    const src = String(imgEl.getAttribute('src') || '').trim();
+    if (!src) return false;
+    let recovered = '';
+    try {
+      const parsed = new URL(src, window.location.origin);
+      const path = parsed.pathname || '';
+      const m = path.match(/\/(uploads|public\/fotos|public\/produtos)\/([^/?#]+)/i);
+      if (m) recovered = window.location.origin + '/' + m[1] + '/' + m[2];
+    } catch (e) {
+      /* noop */
+    }
+    if (!recovered) {
+      const m2 = src.match(/(?:uploads|public\/fotos|public\/produtos)[\\/][^?#]+/i);
+      if (m2) recovered = window.location.origin + '/' + m2[0].replace(/\\/g, '/').replace(/^\/+/, '');
+    }
+    if (imgEl.dataset) imgEl.dataset.fallbackTried = '1';
+    if (recovered && recovered !== src) {
+      imgEl.setAttribute('src', recovered);
+      return true;
+    }
+    return false;
   }
 
   function getProductIdFromQuery() {
@@ -133,7 +177,7 @@
     const mainUrl = galleryUrls[0] || '';
 
     const mainHtml = mainUrl
-      ? `<img id="productMainImg" src="${escapeHtml(mainUrl)}" alt="${safeName}" width="800" height="1067" loading="eager" decoding="async" />`
+      ? `<img id="productMainImg" src="${escapeHtml(mainUrl)}" alt="${safeName}" width="800" height="1067" loading="eager" decoding="async" onerror="window.handleMediaLoadError&&window.handleMediaLoadError(this)" />`
       : '<div class="product-detail__placeholder" role="img" aria-label="Sem foto do produto"></div>';
 
     const thumbsHtml =
@@ -141,7 +185,7 @@
         ? `<div class="product-detail__thumbs" role="tablist" aria-label="Galeria de fotos">${galleryUrls
             .map(
               (u, i) =>
-                `<button type="button" class="product-detail__thumb${i === 0 ? ' is-active' : ''}" role="tab" aria-selected="${i === 0}" data-src="${escapeHtml(u)}" aria-label="Foto ${i + 1}"><img src="${escapeHtml(u)}" alt="" loading="lazy" width="88" height="110" /></button>`
+                `<button type="button" class="product-detail__thumb${i === 0 ? ' is-active' : ''}" role="tab" aria-selected="${i === 0}" data-src="${escapeHtml(u)}" aria-label="Foto ${i + 1}"><img src="${escapeHtml(u)}" alt="" loading="lazy" width="88" height="110" onerror="window.handleMediaLoadError&&window.handleMediaLoadError(this)" /></button>`
             )
             .join('')}</div>`
         : '';
@@ -196,6 +240,7 @@
     const imgEl = articleEl.querySelector('#productMainImg');
     if (imgEl) {
       imgEl.addEventListener('error', function onImgErr() {
+        if (handleMediaLoadError(imgEl)) return;
         imgEl.removeEventListener('error', onImgErr);
         const ph = document.createElement('div');
         ph.className = 'product-detail__placeholder';
@@ -236,6 +281,7 @@
   }
 
   async function init() {
+    window.handleMediaLoadError = window.handleMediaLoadError || handleMediaLoadError;
     const id = getProductIdFromQuery();
     if (!id) {
       if (loadingEl) loadingEl.hidden = true;

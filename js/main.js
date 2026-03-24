@@ -336,18 +336,62 @@ function escapeHtml(str) {
 function resolveMediaUrl(url) {
   if (url == null || String(url).trim() === '') return '';
   const u = String(url).trim();
-  if (/^https?:\/\//i.test(u) || u.startsWith('data:')) return u;
+  if (u.startsWith('data:')) return u;
   if (u.startsWith('//')) return window.location.protocol + u;
   const base = String(window.AMINA_API_BASE || '').replace(/\/$/, '');
+  const currentOrigin = window.location.origin;
+  const isKnownMediaPath = (p) => {
+    const clean = String(p || '').replace(/^\.\//, '').replace(/^\/+/, '');
+    return /^(uploads|public\/fotos|public\/produtos)\b/i.test(clean);
+  };
+  if (/^https?:\/\//i.test(u)) {
+    try {
+      const parsed = new URL(u);
+      const path = parsed.pathname || '';
+      if (parsed.origin !== currentOrigin && isKnownMediaPath(path)) {
+        const targetBase = base || currentOrigin;
+        return targetBase.replace(/\/$/, '') + path + (parsed.search || '');
+      }
+      return u;
+    } catch {
+      return u;
+    }
+  }
   if (u.startsWith('/')) {
     if (base) return base + u;
-    return window.location.origin + u;
+    return currentOrigin + u;
   }
   if (base) return base + '/' + u.replace(/^\.\//, '');
-  if (u.startsWith('uploads/') || u.indexOf('/') >= 0) {
-    return window.location.origin + '/' + u.replace(/^\//, '');
+  if (isKnownMediaPath(u) || u.indexOf('/') >= 0) {
+    return currentOrigin + '/' + u.replace(/^\/+/, '');
   }
   return u;
+}
+
+function handleMediaLoadError(imgEl) {
+  if (!imgEl) return;
+  if (imgEl.dataset && imgEl.dataset.fallbackTried === '1') return;
+  const src = String(imgEl.getAttribute('src') || '').trim();
+  if (!src) return;
+
+  let recovered = '';
+  try {
+    const parsed = new URL(src, window.location.origin);
+    const path = parsed.pathname || '';
+    const m = path.match(/\/(uploads|public\/fotos|public\/produtos)\/([^/?#]+)/i);
+    if (m) recovered = window.location.origin + '/' + m[1] + '/' + m[2];
+  } catch (e) {
+    /* noop */
+  }
+  if (!recovered) {
+    const m2 = src.match(/(?:uploads|public\/fotos|public\/produtos)[\\/][^?#]+/i);
+    if (m2) recovered = window.location.origin + '/' + m2[0].replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+
+  if (imgEl.dataset) imgEl.dataset.fallbackTried = '1';
+  if (recovered && recovered !== src) {
+    imgEl.src = recovered;
+  }
 }
 
 function bindProductCard(card) {
@@ -444,12 +488,12 @@ function buildProductCard(p) {
       ${rawList
         .map(
           (u, i) =>
-            `<img src="${escapeHtml(u)}" alt="" class="product-card__carousel-img${i === 0 ? ' active' : ''}" loading="lazy" width="600" height="800" />`
+            `<img src="${escapeHtml(u)}" alt="" class="product-card__carousel-img${i === 0 ? ' active' : ''}" loading="lazy" width="600" height="800" onerror="window.handleMediaLoadError&&window.handleMediaLoadError(this)" />`
         )
         .join('')}
     </div>`;
   } else if (rawList.length === 1) {
-    img = `<img src="${escapeHtml(rawList[0])}" alt="${safeName}" class="product-card__img product-card__img--real" loading="lazy" width="600" height="800" />`;
+    img = `<img src="${escapeHtml(rawList[0])}" alt="${safeName}" class="product-card__img product-card__img--real" loading="lazy" width="600" height="800" onerror="window.handleMediaLoadError&&window.handleMediaLoadError(this)" />`;
   } else {
     img = `<div class="product-card__img product-card__img--placeholder"></div>`;
   }
@@ -816,6 +860,7 @@ document.head.insertAdjacentHTML('beforeend', `
 `);
 
 /* ===== INIT ===== */
+window.handleMediaLoadError = handleMediaLoadError;
 updateCart();
 loadProductsFromAPI();
 warmCartImagesFromAPI().catch(() => {});

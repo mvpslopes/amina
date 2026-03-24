@@ -33,6 +33,21 @@ return [
     'upload_public_url' => '/uploads',
 
     /**
+     * GA4 Data API (analytics nativo no admin, sem Looker Studio)
+     * - property_id: ID numérico da propriedade GA4 (não é o G-XXXX).
+     * - client_email/private_key: da Service Account no Google Cloud.
+     * Importante: dar acesso da Service Account na propriedade GA4 (Viewer/Analyst).
+     */
+    'ga4' => [
+        // Ex.: 14214509876
+        'property_id' => '',
+        // Ex.: analytics-reader@seu-projeto.iam.gserviceaccount.com
+        'client_email' => '',
+        // Cole a chave inteira (com \n) ou use HEREDOC no config.local.php
+        'private_key' => '',
+    ],
+
+    /**
      * Só para diagnosticar conexão MySQL. Defina uma string longa e acesse:
      *   /api/test-db-connection.php?key=ESSA_STRING
      * Depois remova esta linha e apague test-db-connection.php no servidor.

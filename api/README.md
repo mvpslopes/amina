@@ -41,6 +41,7 @@ Se existir **`api/config.local.php`** no seu PC (com senha e `jwt_secret`), o bu
 | GET/POST | `/api/users` | Root |
 | DELETE | `/api/users/:id` | Root |
 | POST | `/api/upload` | Sim |
+| GET | `/api/analytics/summary?days=7` | Sim |
 | GET | `/api/public/products` | Não |
 | GET | `/api/public/collections` | Não |
 

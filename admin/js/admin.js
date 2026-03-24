@@ -135,15 +135,76 @@
   function money(n) {
     return Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
+  function resolveMediaUrl(url) {
+    if (url == null || String(url).trim() === '') return '';
+    const u = String(url).trim();
+    if (u.startsWith('data:')) return u;
+    if (u.startsWith('//')) return window.location.protocol + u;
+    const base = String(window.AMINA_API_BASE || '').replace(/\/$/, '');
+    const currentOrigin = window.location.origin;
+    const isKnownMediaPath = (p) => {
+      const clean = String(p || '').replace(/^\.\//, '').replace(/^\/+/, '');
+      return /^(uploads|public\/fotos|public\/produtos)\b/i.test(clean);
+    };
+    if (/^https?:\/\//i.test(u)) {
+      try {
+        const parsed = new URL(u);
+        const path = parsed.pathname || '';
+        if (parsed.origin !== currentOrigin && isKnownMediaPath(path)) {
+          const targetBase = base || currentOrigin;
+          return targetBase.replace(/\/$/, '') + path + (parsed.search || '');
+        }
+        return u;
+      } catch {
+        return u;
+      }
+    }
+    if (u.startsWith('/')) {
+      if (base) return base + u;
+      return currentOrigin + u;
+    }
+    if (base) return base + '/' + u.replace(/^\.\//, '');
+    if (isKnownMediaPath(u) || u.indexOf('/') >= 0) {
+      return currentOrigin + '/' + u.replace(/^\/+/, '');
+    }
+    return u;
+  }
+  function handleMediaLoadError(imgEl) {
+    if (!imgEl) return false;
+    if (imgEl.dataset && imgEl.dataset.fallbackTried === '1') return false;
+    const src = String(imgEl.getAttribute('src') || '').trim();
+    if (!src) return false;
+    let recovered = '';
+    try {
+      const parsed = new URL(src, window.location.origin);
+      const path = parsed.pathname || '';
+      const m = path.match(/\/(uploads|public\/fotos|public\/produtos)\/([^/?#]+)/i);
+      if (m) recovered = window.location.origin + '/' + m[1] + '/' + m[2];
+    } catch (e) {
+      /* noop */
+    }
+    if (!recovered) {
+      const m2 = src.match(/(?:uploads|public\/fotos|public\/produtos)[\\/][^?#]+/i);
+      if (m2) recovered = window.location.origin + '/' + m2[0].replace(/\\/g, '/').replace(/^\/+/, '');
+    }
+    if (imgEl.dataset) imgEl.dataset.fallbackTried = '1';
+    if (recovered && recovered !== src) {
+      imgEl.setAttribute('src', recovered);
+      return true;
+    }
+    return false;
+  }
   function thumb(url, size = 48) {
-    if (!url) return `<div class="table-thumb table-thumb--empty"><i class="fa-regular fa-image"></i></div>`;
-    return `<img class="table-thumb" src="${escapeHtml(url)}" alt="" width="${size}" height="${size}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'table-thumb table-thumb--empty',innerHTML:'<i class=\\'fa-regular fa-image\\'></i>'}))">`;
+    const resolved = resolveMediaUrl(url);
+    if (!resolved) return `<div class="table-thumb table-thumb--empty"><i class="fa-regular fa-image"></i></div>`;
+    return `<img class="table-thumb" src="${escapeHtml(resolved)}" alt="" width="${size}" height="${size}" loading="lazy" onerror="if(window.handleMediaLoadError&&window.handleMediaLoadError(this)){return;}this.replaceWith(Object.assign(document.createElement('div'),{className:'table-thumb table-thumb--empty',innerHTML:'<i class=\\'fa-regular fa-image\\'></i>'}))">`;
   }
   function badgeChip(b) {
     if (!b) return '';
     const cls = { Novo: 'badge--new', Destaque: 'badge--feat', 'Promoção': 'badge--promo', Exclusivo: 'badge--excl' }[b] || 'badge--new';
     return `<span class="badge-chip ${cls}">${escapeHtml(b)}</span>`;
   }
+  window.handleMediaLoadError = window.handleMediaLoadError || handleMediaLoadError;
 
   /* ===== CACHE ===== */
   let productsCache    = [];
@@ -151,12 +212,22 @@
 
   /* ===== DASHBOARD — gráficos rosca (Chart.js) ===== */
   const CHART_PALETTE = ['#4a1124', '#c9a96e', '#6b1e36', '#2e0a16', '#a65d57', '#d4a574', '#7c5c66', '#8b4a5c'];
+  const analyticsCharts = {};
+  let analyticsDays = 7;
 
   function destroyDashboardChart(canvasId) {
     const el = document.getElementById(canvasId);
     if (!el || typeof Chart === 'undefined') return;
     const existing = Chart.getChart(el);
     if (existing) existing.destroy();
+  }
+
+  function destroyAnalyticsChart(canvasId) {
+    const el = document.getElementById(canvasId);
+    if (!el || typeof Chart === 'undefined') return;
+    const existing = Chart.getChart(el);
+    if (existing) existing.destroy();
+    delete analyticsCharts[canvasId];
   }
 
   function chartColors(n) {
@@ -192,6 +263,218 @@
       },
       cutout: '58%',
     };
+  }
+
+  function shortDatePt(raw) {
+    const s = String(raw || '');
+    if (!/^\d{8}$/.test(s)) return s;
+    const y = Number(s.slice(0, 4));
+    const m = Number(s.slice(4, 6));
+    const d = Number(s.slice(6, 8));
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+
+  function fmtInt(v) {
+    return Number(v || 0).toLocaleString('pt-BR');
+  }
+
+  function fmtDec(v, digits = 1) {
+    return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  function buildSimpleTable(containerId, rows, cols) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<p class="muted">Sem dados no período.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="data-table data-table--compact">
+        <thead><tr>${cols.map((c) => `<th>${escapeHtml(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${rows.map((r) => `<tr>${cols.map((c) => `<td>${escapeHtml(String(c.value(r)))}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function setAnalyticsStatus(msg, isErr) {
+    const status = document.getElementById('analyticsStatus');
+    if (!status) return;
+    status.textContent = msg;
+    status.classList.toggle('analytics-overview__status--err', !!isErr);
+  }
+
+  function setAnalyticsVisible(ok) {
+    const kpis = document.getElementById('analyticsKpis');
+    const panels = document.getElementById('analyticsPanels');
+    const tables = document.getElementById('analyticsTables');
+    if (kpis) kpis.hidden = !ok;
+    if (panels) panels.hidden = !ok;
+    if (tables) tables.hidden = !ok;
+  }
+
+  function setKpiText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function renderAnalyticsCharts(data) {
+    if (typeof Chart === 'undefined') return;
+    destroyAnalyticsChart('chartVisitorsTimeline');
+    destroyAnalyticsChart('chartPeakHours');
+    destroyAnalyticsChart('chartWeekday');
+    destroyAnalyticsChart('chartDevices');
+    destroyAnalyticsChart('chartChannels');
+
+    const timeline = Array.isArray(data.timeline) ? data.timeline : [];
+    analyticsCharts.chartVisitorsTimeline = new Chart(document.getElementById('chartVisitorsTimeline'), {
+      type: 'line',
+      data: {
+        labels: timeline.map((r) => shortDatePt(r.date)),
+        datasets: [
+          {
+            label: 'Visitantes',
+            data: timeline.map((r) => Number(r.users) || 0),
+            borderColor: '#4a1124',
+            backgroundColor: 'rgba(74,17,36,.16)',
+            fill: true,
+            tension: .25,
+          },
+          {
+            label: 'Visitas',
+            data: timeline.map((r) => Number(r.sessions) || 0),
+            borderColor: '#c9a96e',
+            backgroundColor: 'rgba(201,169,110,.08)',
+            fill: false,
+            tension: .25,
+          },
+        ],
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+    });
+
+    const peakHours = Array.isArray(data.peakHours) ? data.peakHours : [];
+    analyticsCharts.chartPeakHours = new Chart(document.getElementById('chartPeakHours'), {
+      type: 'bar',
+      data: {
+        labels: peakHours.map((r) => `${String(r.hour).padStart(2, '0')}:00`),
+        datasets: [{ label: 'Visitas', data: peakHours.map((r) => Number(r.sessions) || 0), backgroundColor: '#6b1e36' }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+    });
+
+    const byWeekday = Array.isArray(data.byWeekday) ? data.byWeekday : [];
+    analyticsCharts.chartWeekday = new Chart(document.getElementById('chartWeekday'), {
+      type: 'bar',
+      data: {
+        labels: byWeekday.map((r) => r.day),
+        datasets: [{ label: 'Visitas', data: byWeekday.map((r) => Number(r.sessions) || 0), backgroundColor: '#a65d57' }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+    });
+
+    const byDevice = Array.isArray(data.byDevice) ? data.byDevice : [];
+    analyticsCharts.chartDevices = new Chart(document.getElementById('chartDevices'), {
+      type: 'doughnut',
+      data: {
+        labels: byDevice.map((r) => r.name || 'Desconhecido'),
+        datasets: [{ data: byDevice.map((r) => Number(r.sessions) || 0), backgroundColor: chartColors(byDevice.length || 1), borderColor: '#fff', borderWidth: 2 }],
+      },
+      options: doughnutOptions(),
+    });
+
+    const byChannel = Array.isArray(data.byChannel) ? data.byChannel : [];
+    analyticsCharts.chartChannels = new Chart(document.getElementById('chartChannels'), {
+      type: 'doughnut',
+      data: {
+        labels: byChannel.map((r) => r.name || 'Desconhecido'),
+        datasets: [{ data: byChannel.map((r) => Number(r.sessions) || 0), backgroundColor: chartColors(byChannel.length || 1), borderColor: '#fff', borderWidth: 2 }],
+      },
+      options: doughnutOptions(),
+    });
+  }
+
+  function renderAnalyticsTables(data) {
+    buildSimpleTable('tableCountries', data.byCountry || [], [
+      { label: 'País', value: (r) => r.country || 'Desconhecido' },
+      { label: 'Sessões', value: (r) => fmtInt(r.sessions) },
+      { label: 'Views', value: (r) => fmtInt(r.views) },
+    ]);
+    buildSimpleTable('tableCities', data.byCity || [], [
+      { label: 'Cidade', value: (r) => r.city || 'Desconhecida' },
+      { label: 'País', value: (r) => r.country || '—' },
+      { label: 'Sessões', value: (r) => fmtInt(r.sessions) },
+    ]);
+    buildSimpleTable('tableBrowsers', data.byBrowser || [], [
+      { label: 'Navegador', value: (r) => r.name || 'Desconhecido' },
+      { label: 'Sessões', value: (r) => fmtInt(r.sessions) },
+    ]);
+    buildSimpleTable('tableOs', data.byOs || [], [
+      { label: 'Sistema', value: (r) => r.name || 'Desconhecido' },
+      { label: 'Sessões', value: (r) => fmtInt(r.sessions) },
+    ]);
+    buildSimpleTable('tableClicks', data.topClickedEvents || [], [
+      { label: 'Evento', value: (r) => r.eventName || 'click' },
+      { label: 'Ocorrências', value: (r) => fmtInt(r.eventCount) },
+    ]);
+  }
+
+  async function loadAnalyticsOverview(daysArg) {
+    const days = [1, 7, 30, 90].includes(Number(daysArg)) ? Number(daysArg) : analyticsDays;
+    analyticsDays = days;
+    setAnalyticsStatus('Carregando dados do GA4…', false);
+    setAnalyticsVisible(false);
+    try {
+      const data = await Promise.race([
+        api('/api/analytics/summary?days=' + days),
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Tempo excedido ao consultar o GA4 (timeout). Tente novamente em alguns segundos.'
+                )
+              ),
+            60000
+          )
+        ),
+      ]);
+      if (!data || !data.configured) {
+        setAnalyticsStatus(
+          (data && data.error) ||
+            'GA4 não configurado no backend. Configure GA4_PROPERTY_ID, GA4_CLIENT_EMAIL e GA4_PRIVATE_KEY.',
+          true
+        );
+        return;
+      }
+
+      setKpiText('kpiOnlineNow', fmtInt(data.onlineNow));
+      setKpiText('kpiVisitors', fmtInt(data.cards.uniqueVisitors));
+      setKpiText('kpiVisits', fmtInt(data.cards.totalVisits));
+      setKpiText('kpiViews', fmtInt(data.cards.totalViews));
+      setKpiText('kpiAvgViews', fmtDec(data.cards.avgViewsPerVisitor, 1));
+      setKpiText('kpiClicks', fmtInt(data.cards.totalClicks));
+      setKpiText('kpiInteractions', fmtInt(data.cards.totalInteractions));
+      setKpiText('kpiConversion', fmtDec(data.cards.conversionRate, 1) + '%');
+
+      renderAnalyticsCharts(data);
+      renderAnalyticsTables(data);
+      setAnalyticsVisible(true);
+      setAnalyticsStatus(`Período: últimos ${days} dia(s).`, false);
+    } catch (err) {
+      const msg = String(err && err.message ? err.message : '');
+      if (/rota não encontrada|404|not found/i.test(msg)) {
+        setAnalyticsStatus(
+          'Analytics nativo indisponível neste servidor (rota /api/analytics/summary ausente). Use o dashboard embed em admin/js/config.js.',
+          true
+        );
+        return;
+      }
+      setAnalyticsStatus('Erro ao carregar Analytics: ' + (err.message || 'falha desconhecida'), true);
+    }
   }
 
   function renderDashboardCharts(products, collections) {
@@ -296,9 +579,30 @@
     });
   }
 
+  function renderDashboardAnalytics() {
+    const wrapper = document.getElementById('dashboardAnalytics');
+    const card = document.getElementById('dashAnalyticsCard');
+    const hint = document.getElementById('dashAnalyticsHint');
+    const frame = document.getElementById('dashAnalyticsFrame');
+    if (!wrapper || !card || !hint || !frame) return;
+    const url = String(window.AMINA_ANALYTICS_DASHBOARD_URL || '').trim();
+    if (url && /^https?:\/\//i.test(url)) {
+      frame.src = url;
+      card.hidden = false;
+      hint.hidden = true;
+      wrapper.hidden = false;
+      return;
+    }
+    frame.removeAttribute('src');
+    card.hidden = true;
+    hint.hidden = true;
+    wrapper.hidden = true;
+  }
+
   /* ===== DASHBOARD ===== */
   async function loadDashboard() {
     try {
+      renderDashboardAnalytics();
       const [prods, cols] = await Promise.all([api('/api/products'), api('/api/collections')]);
       const statP = document.getElementById('statProducts');
       const statC = document.getElementById('statCollections');
@@ -310,6 +614,7 @@
         if (statU) statU.textContent = users.length;
       }
       renderDashboardCharts(prods, cols);
+      loadAnalyticsOverview(analyticsDays).catch(() => {});
     } catch (e) {
       toast('Erro ao carregar dashboard: ' + e.message, false);
     }
@@ -475,8 +780,9 @@
     const img = document.getElementById(previewId);
     const ph  = document.getElementById(placeholderId);
     if (!img || !ph) return;
-    if (url && url.trim()) {
-      img.src = url.trim();
+    const resolved = resolveMediaUrl(url);
+    if (resolved && resolved.trim()) {
+      img.src = resolved.trim();
       img.hidden = false;
       ph.hidden  = true;
     } else {
@@ -570,7 +876,7 @@
     ul.innerHTML = productGalleryUrls.map((url, i) => `
     <li class="product-gallery-editor__item" data-index="${i}">
       <span class="product-gallery-editor__idx">${i + 1}</span>
-      <img src="${escapeHtml(url)}" alt="" />
+      <img src="${escapeHtml(resolveMediaUrl(url))}" alt="" onerror="window.handleMediaLoadError&&window.handleMediaLoadError(this)" />
       <div class="product-gallery-editor__actions">
         <button type="button" class="btn btn--icon btn--ghost" data-move="-1" title="Subir" aria-label="Subir">↑</button>
         <button type="button" class="btn btn--icon btn--ghost" data-move="1" title="Descer" aria-label="Descer">↓</button>
@@ -852,5 +1158,15 @@
   });
 
   /* ===== INIT ===== */
+  document.querySelectorAll('#analyticsPeriodFilters [data-days]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const days = Number(btn.dataset.days);
+      document.querySelectorAll('#analyticsPeriodFilters [data-days]').forEach((b) =>
+        b.classList.toggle('active', b === btn)
+      );
+      loadAnalyticsOverview(days);
+    });
+  });
+
   Promise.all([loadProducts(), loadCollections(), loadCollectionsForChecks()]).catch(err => toast(err.message, false));
 })();

@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const productsRoutes = require('./routes/products');
 const collectionsRoutes = require('./routes/collections');
+const analyticsRoutes = require('./routes/analytics');
 const { attachProductImages } = require('./lib/productImages');
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/collections', collectionsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 async function attachCollectionsToProducts(rows) {
   const allPc = await db.all('SELECT product_id, collection_id FROM product_collections');

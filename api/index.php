@@ -18,6 +18,121 @@ $path = trim($uri, '/');
 $segments = $path === '' ? [] : explode('/', $path);
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+function b64url(string $raw): string
+{
+    return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+}
+
+function ga4_access_token(string $clientEmail, string $privateKey): string
+{
+    if (!function_exists('openssl_sign')) {
+        throw new RuntimeException('OpenSSL não disponível no PHP.');
+    }
+    $iat = time();
+    $header = b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'], JSON_UNESCAPED_UNICODE));
+    $claims = b64url(json_encode([
+        'iss' => $clientEmail,
+        'scope' => 'https://www.googleapis.com/auth/analytics.readonly',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'iat' => $iat,
+        'exp' => $iat + 3600,
+    ], JSON_UNESCAPED_UNICODE));
+    $unsigned = $header . '.' . $claims;
+    $signature = '';
+    $ok = openssl_sign($unsigned, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+    if (!$ok) {
+        throw new RuntimeException('Falha ao assinar JWT para Google OAuth.');
+    }
+    $jwt = $unsigned . '.' . b64url($signature);
+
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('cURL não disponível no PHP.');
+    }
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_POSTFIELDS => http_build_query([
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion' => $jwt,
+        ]),
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $resp = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($resp === false || $status >= 400) {
+        throw new RuntimeException('Falha ao obter token OAuth: ' . ($err ?: ('HTTP ' . $status)));
+    }
+    $json = json_decode((string) $resp, true);
+    $token = is_array($json) ? (string) ($json['access_token'] ?? '') : '';
+    if ($token === '') {
+        throw new RuntimeException('Google OAuth sem access_token.');
+    }
+    return $token;
+}
+
+function ga4_post_json(string $url, array $payload, string $bearer): array
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $bearer,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 25,
+    ]);
+    $resp = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($resp === false || $status >= 400) {
+        $detail = '';
+        if (is_string($resp) && $resp !== '') {
+            $j = json_decode($resp, true);
+            if (is_array($j)) {
+                $msg = (string) (($j['error']['message'] ?? '') ?: '');
+                if ($msg !== '') {
+                    $detail = ' - ' . $msg;
+                }
+            }
+        }
+        throw new RuntimeException('GA4 Data API falhou: ' . ($err ?: ('HTTP ' . $status)) . $detail);
+    }
+    $json = json_decode((string) $resp, true);
+    if (!is_array($json)) {
+        throw new RuntimeException('Resposta inválida da GA4 Data API.');
+    }
+    return $json;
+}
+
+function ga4_rows(array $report, array $dimKeys, array $metricKeys): array
+{
+    $rows = $report['rows'] ?? [];
+    if (!is_array($rows)) {
+        return [];
+    }
+    $out = [];
+    foreach ($rows as $r) {
+        $item = [];
+        $dv = is_array($r['dimensionValues'] ?? null) ? $r['dimensionValues'] : [];
+        $mv = is_array($r['metricValues'] ?? null) ? $r['metricValues'] : [];
+        foreach ($dimKeys as $i => $k) {
+            $item[$k] = (string) (($dv[$i]['value'] ?? '') ?: '');
+        }
+        foreach ($metricKeys as $i => $k) {
+            $item[$k] = (float) (($mv[$i]['value'] ?? 0) ?: 0);
+        }
+        $out[] = $item;
+    }
+    return $out;
+}
+
 // --- Auth: login ---
 if ($method === 'POST' && ($segments[0] ?? '') === 'auth' && ($segments[1] ?? '') === 'login') {
     $body = json_body();
@@ -105,6 +220,178 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'public' && ($segments[1] ?? '
     $sql = 'SELECT c.*, (SELECT COUNT(*) FROM product_collections pc WHERE pc.collection_id = c.id) AS product_count
             FROM collections c ORDER BY c.name';
     json_out(200, $pdo->query($sql)->fetchAll());
+}
+
+// --- Analytics (GA4 direto, sem Looker) ---
+if ($method === 'GET' && ($segments[0] ?? '') === 'analytics' && ($segments[1] ?? '') === 'summary') {
+    require_auth($CONFIG, $pdo);
+
+    $gaCfg = is_array($CONFIG['ga4'] ?? null) ? $CONFIG['ga4'] : [];
+    $propertyId = trim((string) ($gaCfg['property_id'] ?? ''));
+    $clientEmail = trim((string) ($gaCfg['client_email'] ?? ''));
+    $privateKey = str_replace('\n', "\n", (string) ($gaCfg['private_key'] ?? ''));
+    if ($propertyId === '' || $clientEmail === '' || trim($privateKey) === '') {
+        json_out(200, [
+            'configured' => false,
+            'error' => 'GA4 não configurado no backend. Defina ga4.property_id, ga4.client_email e ga4.private_key em api/config.local.php',
+        ]);
+    }
+
+    $days = isset($_GET['days']) ? (int) $_GET['days'] : 7;
+    if (!in_array($days, [1, 7, 30, 90], true)) {
+        $days = 7;
+    }
+    $dateRanges = [['startDate' => $days . 'daysAgo', 'endDate' => 'today']];
+    $property = 'properties/' . $propertyId;
+
+    try {
+        $token = ga4_access_token($clientEmail, $privateKey);
+
+        $run = function (array $payload) use ($property, $token): array {
+            return ga4_post_json(
+                'https://analyticsdata.googleapis.com/v1beta/' . $property . ':runReport',
+                $payload,
+                $token
+            );
+        };
+
+        $rt = ga4_post_json(
+            'https://analyticsdata.googleapis.com/v1beta/' . $property . ':runRealtimeReport',
+            ['metrics' => [['name' => 'activeUsers']]],
+            $token
+        );
+        $totals = $run([
+            'dateRanges' => $dateRanges,
+            'metrics' => [
+                ['name' => 'totalUsers'],
+                ['name' => 'sessions'],
+                ['name' => 'screenPageViews'],
+                ['name' => 'eventCount'],
+            ],
+        ]);
+        $timeline = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'date']],
+            'metrics' => [['name' => 'totalUsers'], ['name' => 'sessions'], ['name' => 'screenPageViews']],
+            'orderBys' => [['dimension' => ['dimensionName' => 'date']]],
+        ]);
+        $byHour = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'hour']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['dimension' => ['dimensionName' => 'hour']]],
+        ]);
+        $byWeekday = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'dayOfWeekName']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+        ]);
+        $byDevice = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'deviceCategory']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+        ]);
+        $byBrowser = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'browser']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+        $byOs = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'operatingSystem']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+        $byChannel = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'sessionDefaultChannelGroup']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+        $byCountry = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'country']],
+            'metrics' => [['name' => 'sessions'], ['name' => 'screenPageViews']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+        $byCity = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'city'], ['name' => 'country']],
+            'metrics' => [['name' => 'sessions']],
+            'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+        $clicks = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'eventName']],
+            'metrics' => [['name' => 'eventCount']],
+            'dimensionFilter' => [
+                'filter' => [
+                    'fieldName' => 'eventName',
+                    'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'click'],
+                ],
+            ],
+            'orderBys' => [['metric' => ['metricName' => 'eventCount'], 'desc' => true]],
+            'limit' => 10,
+        ]);
+
+        $tRows = $totals['rows'] ?? [];
+        $t0 = is_array($tRows[0] ?? null) ? $tRows[0] : [];
+        $m = is_array($t0['metricValues'] ?? null) ? $t0['metricValues'] : [];
+        $totalUsers = (float) (($m[0]['value'] ?? 0) ?: 0);
+        $totalSessions = (float) (($m[1]['value'] ?? 0) ?: 0);
+        $totalViews = (float) (($m[2]['value'] ?? 0) ?: 0);
+        $totalEvents = (float) (($m[3]['value'] ?? 0) ?: 0);
+
+        $clickRows = ga4_rows($clicks, ['eventName'], ['eventCount']);
+        $totalClicks = 0.0;
+        foreach ($clickRows as $row) {
+            $totalClicks += (float) ($row['eventCount'] ?? 0);
+        }
+
+        $rtRows = $rt['rows'] ?? [];
+        $online = 0.0;
+        if (is_array($rtRows[0] ?? null)) {
+            $online = (float) (($rtRows[0]['metricValues'][0]['value'] ?? 0) ?: 0);
+        }
+
+        json_out(200, [
+            'configured' => true,
+            'periodDays' => $days,
+            'onlineNow' => $online,
+            'cards' => [
+                'uniqueVisitors' => $totalUsers,
+                'totalVisits' => $totalSessions,
+                'totalViews' => $totalViews,
+                'avgViewsPerVisitor' => $totalUsers > 0 ? ($totalViews / $totalUsers) : 0,
+                'totalClicks' => $totalClicks,
+                'totalInteractions' => $totalEvents,
+                'conversionRate' => $totalSessions > 0 ? (($totalClicks / $totalSessions) * 100) : 0,
+            ],
+            'timeline' => ga4_rows($timeline, ['date'], ['users', 'sessions', 'views']),
+            'peakHours' => ga4_rows($byHour, ['hour'], ['sessions']),
+            'byWeekday' => ga4_rows($byWeekday, ['day'], ['sessions']),
+            'byDevice' => ga4_rows($byDevice, ['name'], ['sessions']),
+            'byBrowser' => ga4_rows($byBrowser, ['name'], ['sessions']),
+            'byOs' => ga4_rows($byOs, ['name'], ['sessions']),
+            'byChannel' => ga4_rows($byChannel, ['name'], ['sessions']),
+            'byCountry' => ga4_rows($byCountry, ['country'], ['sessions', 'views']),
+            'byCity' => ga4_rows($byCity, ['city', 'country'], ['sessions']),
+            'topClickedEvents' => $clickRows,
+        ]);
+    } catch (Throwable $e) {
+        json_out(200, [
+            'configured' => false,
+            'error' => 'Falha ao consultar GA4: ' . $e->getMessage(),
+        ]);
+    }
 }
 
 // --- Upload (auth) ---

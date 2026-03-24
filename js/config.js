@@ -49,4 +49,21 @@
     w.AMINA_WHATSAPP = '5531983614819';
   }
   w.AMINA_WHATSAPP = String(w.AMINA_WHATSAPP || '').replace(/\D/g, '');
+
+  /**
+   * Google Analytics 4 (GA4)
+   * Exemplo: w.AMINA_GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+   */
+  if (!('AMINA_GA_MEASUREMENT_ID' in w)) {
+    w.AMINA_GA_MEASUREMENT_ID = 'G-6NL6HKVPZV';
+  }
+  w.AMINA_GA_MEASUREMENT_ID = String(w.AMINA_GA_MEASUREMENT_ID || '').trim();
+
+  /**
+   * URL publica de dashboard (ex.: Looker Studio) para exibir no login interno.
+   */
+  if (!('AMINA_ANALYTICS_DASHBOARD_URL' in w)) {
+    w.AMINA_ANALYTICS_DASHBOARD_URL = '';
+  }
+  w.AMINA_ANALYTICS_DASHBOARD_URL = String(w.AMINA_ANALYTICS_DASHBOARD_URL || '').trim();
 })(window);

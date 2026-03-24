@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/mvpslopes/amina#readme",
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.8.0",
     "cors": "^2.8.5",

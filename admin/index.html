@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" type="image/png" href="/logo/favicon.png" />
   <link rel="apple-touch-icon" href="/logo/favicon.png" />
-  <link rel="stylesheet" href="/admin/css/admin.css?v=13" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=15" />
   <script>
     /* Sair: precisa funcionar antes do admin.js e com path /admin ou /admin/index.html */
     (function () {
@@ -139,6 +139,101 @@
       </div>
       <p class="dashboard-charts-empty" id="dashboardChartsEmpty" hidden>Nenhum produto ainda — cadastre itens para ver os gráficos.</p>
 
+      <section class="analytics-overview" id="analyticsOverview">
+        <div class="analytics-overview__head">
+          <h3><i class="fa-solid fa-chart-line"></i> Analytics</h3>
+          <div class="analytics-overview__filters" id="analyticsPeriodFilters">
+            <button type="button" class="btn btn--ghost btn--sm active" data-days="1">Hoje</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-days="7">7 dias</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-days="30">30 dias</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-days="90">90 dias</button>
+          </div>
+        </div>
+
+        <div class="analytics-overview__status" id="analyticsStatus">Carregando dados do GA4…</div>
+
+        <div class="analytics-kpis" id="analyticsKpis" hidden>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Online agora</span>
+            <strong class="analytics-kpi__value" id="kpiOnlineNow">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Visitantes únicos</span>
+            <strong class="analytics-kpi__value" id="kpiVisitors">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Visitas totais</span>
+            <strong class="analytics-kpi__value" id="kpiVisits">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Visualizações</span>
+            <strong class="analytics-kpi__value" id="kpiViews">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Média por visitante</span>
+            <strong class="analytics-kpi__value" id="kpiAvgViews">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Cliques totais</span>
+            <strong class="analytics-kpi__value" id="kpiClicks">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Interações registradas</span>
+            <strong class="analytics-kpi__value" id="kpiInteractions">0</strong>
+          </article>
+          <article class="analytics-kpi">
+            <span class="analytics-kpi__label">Taxa de conversão</span>
+            <strong class="analytics-kpi__value" id="kpiConversion">0%</strong>
+          </article>
+        </div>
+
+        <div class="analytics-panels" id="analyticsPanels" hidden>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-chart-simple"></i> Visitantes ao longo do tempo</h3>
+            <div class="chart-wrap"><canvas id="chartVisitorsTimeline"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-clock"></i> Horários de pico</h3>
+            <div class="chart-wrap"><canvas id="chartPeakHours"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-calendar-week"></i> Atividade por dia da semana</h3>
+            <div class="chart-wrap"><canvas id="chartWeekday"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-mobile-screen"></i> Dispositivos</h3>
+            <div class="chart-wrap"><canvas id="chartDevices"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-globe"></i> Origem do tráfego</h3>
+            <div class="chart-wrap"><canvas id="chartChannels"></canvas></div>
+          </div>
+        </div>
+
+        <div class="analytics-tables" id="analyticsTables" hidden>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-earth-americas"></i> Acessos por país</h3>
+            <div class="analytics-table" id="tableCountries"></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-city"></i> Acessos por cidade</h3>
+            <div class="analytics-table" id="tableCities"></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-brands fa-chrome"></i> Navegadores</h3>
+            <div class="analytics-table" id="tableBrowsers"></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-laptop-code"></i> Sistemas operacionais</h3>
+            <div class="analytics-table" id="tableOs"></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-computer-mouse"></i> Eventos de clique</h3>
+            <div class="analytics-table" id="tableClicks"></div>
+          </div>
+        </div>
+      </section>
+
       <div class="dashboard-quick">
         <h3>Ações rápidas</h3>
         <div class="dashboard-quick__btns">
@@ -150,6 +245,31 @@
           </button>
         </div>
       </div>
+
+      <section class="dashboard-analytics" id="dashboardAnalytics">
+        <div class="analytics-card" id="dashAnalyticsCard" hidden>
+          <div class="analytics-card__head">
+            <h2><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Analytics do site</h2>
+            <p>Acompanhamento de acessos e comportamento em tempo real.</p>
+          </div>
+          <iframe
+            id="dashAnalyticsFrame"
+            class="analytics-card__frame"
+            title="Dashboard de Analytics"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        </div>
+        <div class="analytics-card analytics-card--hint" id="dashAnalyticsHint" hidden>
+          <div class="analytics-card__head">
+            <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Analytics não configurado</h2>
+          </div>
+          <p class="analytics-card__text">
+            Defina <code>window.AMINA_ANALYTICS_DASHBOARD_URL</code> em
+            <code>/admin/js/config.js</code> para exibir aqui.
+          </p>
+        </div>
+      </section>
     </section>
 
     <!-- ===== PRODUTOS ===== -->
@@ -433,7 +553,8 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script src="/admin/js/config.js?v=2"></script>
-  <script src="/admin/js/admin.js?v=2"></script>
+  <script src="/admin/js/config.js?v=3"></script>
+  <script src="/js/analytics.js?v=1"></script>
+  <script src="/admin/js/admin.js?v=9"></script>
 </body>
 </html>

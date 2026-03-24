@@ -1,6 +1,25 @@
 (function () {
   const form = document.getElementById('loginForm');
   const err = document.getElementById('loginError');
+  const analyticsCard = document.getElementById('analyticsCard');
+  const analyticsHint = document.getElementById('analyticsHint');
+  const analyticsFrame = document.getElementById('analyticsFrame');
+  const loginLayout = document.querySelector('.login-layout');
+
+  (function initAnalyticsPreview() {
+    const url = String(window.AMINA_ANALYTICS_DASHBOARD_URL || '').trim();
+    if (!analyticsCard || !analyticsHint || !analyticsFrame || !loginLayout) return;
+    if (url && /^https?:\/\//i.test(url)) {
+      analyticsFrame.src = url;
+      analyticsCard.hidden = false;
+      analyticsHint.hidden = true;
+      loginLayout.classList.remove('login-layout--single');
+      return;
+    }
+    analyticsCard.hidden = true;
+    analyticsHint.hidden = true;
+    loginLayout.classList.add('login-layout--single');
+  })();
 
   if (localStorage.getItem('amina_token')) {
     window.location.replace('/admin/index.html');
