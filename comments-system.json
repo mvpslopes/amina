@@ -1,0 +1,144 @@
+{
+  "name": "Sistema de Comentários/Avaliações com Moderação",
+  "description": "Sistema completo de comentários com moderação (aprovar, rejeitar, excluir) - Frontend React + Backend PHP + MySQL",
+  "version": "1.0.0",
+  "database": {
+    "table": "site_comments",
+    "schema": "CREATE TABLE `site_comments` (\n  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,\n  `author_name` varchar(120) NOT NULL,\n  `author_photo_path` varchar(512) DEFAULT NULL,\n  `rating` tinyint UNSIGNED NOT NULL,\n  `body` text NOT NULL,\n  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',\n  `moderated_by_user_id` int UNSIGNED DEFAULT NULL,\n  `moderated_at` datetime DEFAULT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `idx_status_created` (`status`,`created_at`),\n  CONSTRAINT `fk_comment_moderator` FOREIGN KEY (`moderated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+  },
+  "backend": {
+    "api_public_comments": {
+      "file": "api/public_comments.php",
+      "description": "Endpoint público para listar comentários aprovados (com paginação)",
+      "methods": ["GET"],
+      "params": {
+        "limit": "máximo 1-100 (default: 4)",
+        "offset": "offset para paginação (default: 0)"
+      },
+      "response": {
+        "ok": "boolean",
+        "comments": "array de comentários",
+        "total": "total de comentários aprovados"
+      },
+      "code": "<?php\ndeclare(strict_types=1);\n\nrequire __DIR__ . '/bootstrap.php';\n\nif ($_SERVER['REQUEST_METHOD'] !== 'GET') {\n    json_out(405, ['ok' => false, 'error' => 'Método não permitido']);\n}\n\n$limit = max(1, min(100, (int) ($_GET['limit'] ?? 4)));\n$offset = max(0, (int) ($_GET['offset'] ?? 0));\n\n$pdo = db();\n$st = $pdo->prepare(\n    'SELECT id, author_name, author_photo_path, rating, body, created_at\n     FROM site_comments\n     WHERE status = \\'approved\\'\n     ORDER BY created_at DESC\n     LIMIT ? OFFSET ?'\n);\n$st->bindValue(1, $limit, PDO::PARAM_INT);\n$st->bindValue(2, $offset, PDO::PARAM_INT);\n$st->execute();\n$rows = $st->fetchAll();\n\n$stc = $pdo->query(\"SELECT COUNT(*) AS c FROM site_comments WHERE status = 'approved'\");\n$total = (int) $stc->fetch()['c'];\n\n$tzBr = new DateTimeZone('America/Sao_Paulo');\n$list = [];\nforeach ($rows as $r) {\n    $createdIso = '';\n    $raw = $r['created_at'] ?? '';\n    if ($raw !== '') {\n        try {\n            $dt = new DateTimeImmutable((string) $raw, $tzBr);\n            $createdIso = $dt->format('c');\n        } catch (Throwable $e) {\n            $createdIso = (string) $raw;\n        }\n    }\n    $list[] = [\n        'id' => (int) $r['id'],\n        'author_name' => $r['author_name'],\n        'author_photo' => $r['author_photo_path'],\n        'rating' => (int) $r['rating'],\n        'body' => $r['body'],\n        'created_at' => $createdIso,\n    ];\n}\n\njson_out(200, ['ok' => true, 'comments' => $list, 'total' => $total]);"
+    },
+    "api_comment_submit": {
+      "file": "api/comment_submit.php",
+      "description": "Endpoint público para enviar novo comentário (vai para pending)",
+      "methods": ["POST"],
+      "params": {
+        "author_name": "string (max 120 chars)",
+        "rating": "int 1-5",
+        "body": "string (max 5000 chars)",
+        "photo": "arquivo opcional (JPG, PNG, WebP, max 2MB)"
+      },
+      "response": {
+        "ok": "boolean",
+        "message": "mensagem de sucesso"
+      },
+      "code": "<?php\ndeclare(strict_types=1);\n\nrequire __DIR__ . '/bootstrap.php';\n\nif ($_SERVER['REQUEST_METHOD'] !== 'POST') {\n    json_out(405, ['ok' => false, 'error' => 'Método não permitido']);\n}\n\n$author = trim((string) ($_POST['author_name'] ?? ''));\n$rating = (int) ($_POST['rating'] ?? 0);\n$body = trim((string) ($_POST['body'] ?? ''));\n\nif ($author === '' || strlen($author) > 120) {\n    json_out(400, ['ok' => false, 'error' => 'Nome inválido (máx. 120 caracteres)']);\n}\nif ($rating < 1 || $rating > 5) {\n    json_out(400, ['ok' => false, 'error' => 'Avaliação deve ser de 1 a 5 estrelas']);\n}\nif ($body === '' || strlen($body) > 5000) {\n    json_out(400, ['ok' => false, 'error' => 'Comentário obrigatório (máx. 5000 caracteres)']);\n}\n\n$config = load_config();\n$photoPath = null;\n\nif (!empty($_FILES['photo']) && is_uploaded_file($_FILES['photo']['tmp_name'])) {\n    $f = $_FILES['photo'];\n    if ($f['error'] !== UPLOAD_ERR_OK) {\n        json_out(400, ['ok' => false, 'error' => 'Erro no envio da foto']);\n    }\n    if ($f['size'] > $config['upload']['max_bytes']) {\n        json_out(400, ['ok' => false, 'error' => 'Foto muito grande (máx. 2 MB)']);\n    }\n    $info = @getimagesize($f['tmp_name']);\n    $allowedTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG];\n    if (defined('IMAGETYPE_WEBP')) {\n        $allowedTypes[] = IMAGETYPE_WEBP;\n    }\n    if (!$info || !in_array($info[2], $allowedTypes, true)) {\n        json_out(400, ['ok' => false, 'error' => 'Use JPG, PNG ou WebP']);\n    }\n    $dir = $config['upload']['avatars_dir'];\n    if (!is_dir($dir)) {\n        mkdir($dir, 0755, true);\n    }\n    $ext = match ($info[2]) {\n        IMAGETYPE_JPEG => 'jpg',\n        IMAGETYPE_PNG => 'png',\n        IMAGETYPE_WEBP => 'webp',\n        default => 'jpg',\n    };\n    $name = bin2hex(random_bytes(16)) . '.' . $ext;\n    $dest = $dir . '/' . $name;\n    if (!move_uploaded_file($f['tmp_name'], $dest)) {\n        json_out(500, ['ok' => false, 'error' => 'Falha ao salvar imagem']);\n    }\n    $photoPath = '/api/uploads/avatars/' . $name;\n}\n\n$pdo = db();\n$st = $pdo->prepare(\n    'INSERT INTO site_comments (author_name, author_photo_path, rating, body, status) VALUES (?,?,?,?, \\'pending\\')'\n);\n$st->execute([$author, $photoPath, $rating, $body]);\n\njson_out(201, [\n    'ok' => true,\n    'message' => 'Comentário enviado! Ele aparecerá no site após aprovação da equipe.',\n]);"
+    },
+    "api_admin_comments": {
+      "file": "api/admin_comments.php",
+      "description": "Endpoint administrativo para listar, moderar (aprovar/rejeitar) e excluir comentários",
+      "methods": ["GET", "POST", "DELETE"],
+      "authentication": "Requer login (require_login)",
+      "endpoints": {
+        "GET": {
+          "description": "Listar comentários por status",
+          "params": {
+            "status": "pending | approved | rejected | all (default: pending)"
+          },
+          "response": {
+            "ok": "boolean",
+            "comments": "array com dados do moderador"
+          }
+        },
+        "POST": {
+          "description": "Moderar comentário (aprovar ou rejeitar)",
+          "body": {
+            "id": "int - ID do comentário",
+            "action": "approve | reject"
+          },
+          "response": {
+            "ok": "boolean"
+          }
+        },
+        "DELETE": {
+          "description": "Excluir comentário permanentemente",
+          "params": {
+            "id": "int - ID do comentário"
+          },
+          "response": {
+            "ok": "boolean"
+          }
+        }
+      },
+      "code": "<?php\ndeclare(strict_types=1);\n\nrequire __DIR__ . '/bootstrap.php';\n\n$user = require_login();\n$method = $_SERVER['REQUEST_METHOD'];\n$pdo = db();\n\nif ($method === 'GET') {\n    $status = $_GET['status'] ?? 'pending';\n    if (!in_array($status, ['pending', 'approved', 'rejected', 'all'], true)) {\n        $status = 'pending';\n    }\n    $sql = 'SELECT c.*, u.username AS moderator_username\n            FROM site_comments c\n            LEFT JOIN users u ON u.id = c.moderated_by_user_id';\n    if ($status === 'all') {\n        $sql .= ' ORDER BY c.created_at DESC';\n        $st = $pdo->query($sql);\n    } else {\n        $sql .= ' WHERE c.status = ? ORDER BY c.created_at DESC';\n        $st = $pdo->prepare($sql);\n        $st->execute([$status]);\n    }\n    json_out(200, ['ok' => true, 'comments' => $st->fetchAll()]);\n}\n\nif ($method === 'POST') {\n    $raw = file_get_contents('php://input');\n    $data = json_decode($raw, true) ?: [];\n    $id = (int) ($data['id'] ?? 0);\n    $action = $data['action'] ?? '';\n    if ($id < 1 || !in_array($action, ['approve', 'reject'], true)) {\n        json_out(400, ['ok' => false, 'error' => 'id e action (approve|reject) obrigatórios']);\n    }\n    $newStatus = $action === 'approve' ? 'approved' : 'rejected';\n    $st = $pdo->prepare(\n        'UPDATE site_comments SET status = ?, moderated_by_user_id = ?, moderated_at = NOW() WHERE id = ?'\n    );\n    $st->execute([$newStatus, $user['id'], $id]);\n    json_out(200, ['ok' => true]);\n}\n\nif ($method === 'DELETE') {\n    $id = (int) ($_GET['id'] ?? 0);\n    if ($id < 1) {\n        json_out(400, ['ok' => false, 'error' => 'id obrigatório']);\n    }\n    $st = $pdo->prepare('SELECT author_photo_path FROM site_comments WHERE id = ?');\n    $st->execute([$id]);\n    $row = $st->fetch();\n    if (!$row) {\n        json_out(404, ['ok' => false, 'error' => 'Comentário não encontrado']);\n    }\n    $photoPath = $row['author_photo_path'] ?? '';\n    if ($photoPath !== '' && $photoPath !== null) {\n        $config = load_config();\n        $prefix = '/api/uploads/avatars/';\n        if (str_starts_with($photoPath, $prefix)) {\n            $file = $config['upload']['avatars_dir'] . DIRECTORY_SEPARATOR . basename($photoPath);\n            if (is_file($file)) {\n                @unlink($file);\n            }\n        }\n    }\n    $pdo->prepare('DELETE FROM site_comments WHERE id = ?')->execute([$id]);\n    json_out(200, ['ok' => true]);\n}\n\njson_out(405, ['ok' => false, 'error' => 'Método não permitido']);"
+    }
+  },
+  "frontend": {
+    "components": {
+      "CommentsSection": {
+        "file": "app/src/components/CommentsSection.jsx",
+        "description": "Seção de comentários para página inicial - exibe últimos 4 comentários + formulário",
+        "dependencies": ["react", "react-router-dom"],
+        "features": [
+          "Lista os 4 comentários aprovados mais recentes",
+          "Formulário de envio com nome, nota (1-5 estrelas), comentário e foto opcional",
+          "Upload de avatar com validação (JPG, PNG, WebP, max 2MB)",
+          "Após envio, comentário vai para moderação"
+        ],
+        "code": "import { useEffect, useState } from 'react'\nimport { Link } from 'react-router-dom'\nimport { apiUrl } from '../config.js'\nimport { formatDateTimePtBr } from '../lib/dateLocale.js'\n\nexport default function CommentsSection() {\n  const [comments, setComments] = useState([])\n  const [total, setTotal] = useState(0)\n  const [loading, setLoading] = useState(true)\n  const [form, setForm] = useState({ author_name: '', rating: 5, body: '' })\n  const [photo, setPhoto] = useState(null)\n  const [submitting, setSubmitting] = useState(false)\n  const [msg, setMsg] = useState(null)\n\n  useEffect(() => {\n    fetch(`${apiUrl('public_comments.php')}?limit=4&offset=0`)\n      .then((r) => r.json())\n      .then((d) => {\n        if (d.ok) {\n          setComments(d.comments || [])\n          setTotal(d.total ?? 0)\n        }\n      })\n      .finally(() => setLoading(false))\n  }, [])\n\n  async function handleSubmit(e) {\n    e.preventDefault()\n    setMsg(null)\n    setSubmitting(true)\n    const fd = new FormData()\n    fd.append('author_name', form.author_name.trim())\n    fd.append('rating', String(form.rating))\n    fd.append('body', form.body.trim())\n    if (photo) fd.append('photo', photo)\n\n    try {\n      const r = await fetch(apiUrl('comment_submit.php'), {\n        method: 'POST',\n        body: fd,\n      })\n      const d = await r.json()\n      if (d.ok) {\n        setMsg({ type: 'ok', text: d.message || 'Enviado com sucesso!' })\n        setForm({ author_name: '', rating: 5, body: '' })\n        setPhoto(null)\n      } else {\n        setMsg({ type: 'err', text: d.error || 'Erro ao enviar' })\n      }\n    } catch {\n      setMsg({ type: 'err', text: 'Não foi possível enviar. Tente novamente.' })\n    } finally {\n      setSubmitting(false)\n    }\n  }\n\n  return (\n    <section id=\"avaliacoes\" className=\"py-20 bg-gradient-to-b from-white to-[#f0fbfc]\">\n      <div className=\"max-w-6xl mx-auto px-4\">\n        <div className=\"text-center mb-12\">\n          <div className=\"flex items-center justify-center gap-3 mb-4\">\n            <div className=\"h-px w-10 bg-gradient-to-r from-transparent to-[#19A3B0]\" />\n            <span className=\"text-[#19A3B0] font-semibold text-sm uppercase tracking-widest\">Depoimentos</span>\n            <div className=\"h-px w-10 bg-gradient-to-l from-transparent to-[#19A3B0]\" />\n          </div>\n          <h2 className=\"text-3xl md:text-4xl font-black text-[#007BFF] mb-3\">O que dizem nossos clientes</h2>\n          <p className=\"text-gray-500 max-w-xl mx-auto\">\n            Avaliações reais. Novos comentários passam por moderação antes de aparecerem aqui.\n          </p>\n        </div>\n\n        <div className=\"grid lg:grid-cols-2 gap-10 items-start\">\n          {/* Lista — 4 últimos */}\n          <div>\n            {loading && <p className=\"text-gray-400 text-sm\">Carregando avaliações…</p>}\n            {!loading && comments.length === 0 && (\n              <p className=\"text-gray-500 text-sm\">Seja o primeiro a deixar sua avaliação ao lado.</p>\n            )}\n            <div className=\"space-y-4\">\n              {comments.map((c) => (\n                <article\n                  key={c.id}\n                  className=\"bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-3\"\n                >\n                  {c.author_photo ? (\n                    <img\n                      src={c.author_photo}\n                      alt=\"\"\n                      className=\"w-12 h-12 rounded-full object-cover flex-shrink-0\"\n                    />\n                  ) : (\n                    <div className=\"w-12 h-12 rounded-full bg-[#007BFF]/10 text-[#007BFF] font-bold flex items-center justify-center flex-shrink-0\">\n                      {c.author_name?.charAt(0)?.toUpperCase() || '?'}\n                    </div>\n                  )}\n                  <div className=\"min-w-0\">\n                    <div className=\"flex items-center gap-2 flex-wrap\">\n                      <span className=\"font-bold text-gray-900 text-sm\">{c.author_name}</span>\n                      <span className=\"text-amber-400 text-xs\">{'★'.repeat(c.rating)}{'☆'.repeat(5 - c.rating)}</span>\n                    </div>\n                    {c.created_at && (\n                      <p className=\"text-gray-400 text-[11px] mt-0.5\">{formatDateTimePtBr(c.created_at)}</p>\n                    )}\n                    <p className=\"text-gray-600 text-sm mt-1 line-clamp-4\">{c.body}</p>\n                  </div>\n                </article>\n              ))}\n            </div>\n            {total > 4 && (\n              <Link\n                to=\"/comentarios\"\n                className=\"inline-block mt-6 text-[#19A3B0] font-bold text-sm hover:underline\"\n              >\n                Ver mais avaliações →\n              </Link>\n            )}\n          </div>\n\n          {/* Formulário */}\n          <div className=\"bg-white rounded-3xl p-6 shadow-lg border border-gray-100\">\n            <h3 className=\"font-black text-[#007BFF] text-lg mb-4\">Deixe sua avaliação</h3>\n            <form onSubmit={handleSubmit} className=\"space-y-4\">\n              <div>\n                <label className=\"block text-xs font-semibold text-gray-500 mb-1\">Seu nome</label>\n                <input\n                  required\n                  maxLength={120}\n                  value={form.author_name}\n                  onChange={(e) => setForm((f) => ({ ...f, author_name: e.target.value }))}\n                  className=\"w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#19A3B0] focus:border-transparent\"\n                  placeholder=\"Como quer ser chamado\"\n                />\n              </div>\n              <div>\n                <span className=\"block text-xs font-semibold text-gray-500 mb-2\">Sua nota</span>\n                <StarRatingInput\n                  value={form.rating}\n                  onChange={(rating) => setForm((f) => ({ ...f, rating }))}\n                />\n              </div>\n              <div>\n                <label className=\"block text-xs font-semibold text-gray-500 mb-1\">Comentário</label>\n                <textarea\n                  required\n                  maxLength={5000}\n                  rows={4}\n                  value={form.body}\n                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}\n                  className=\"w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#19A3B0] focus:border-transparent resize-y\"\n                  placeholder=\"Conte como foi seu atendimento…\"\n                />\n              </div>\n              <div>\n                <label className=\"block text-xs font-semibold text-gray-500 mb-1\">Foto de perfil (opcional)</label>\n                <input\n                  type=\"file\"\n                  accept=\"image/jpeg,image/png,image/webp\"\n                  onChange={(e) => setPhoto(e.target.files?.[0] || null)}\n                  className=\"text-sm w-full\"\n                />\n                <p className=\"text-gray-400 text-xs mt-1\">JPG, PNG ou WebP · máx. 2 MB</p>\n              </div>\n              {msg && (\n                <p className={`text-sm ${msg.type === 'ok' ? 'text-green-600' : 'text-red-600'}`}>{msg.text}</p>\n              )}\n              <button\n                type=\"submit\"\n                disabled={submitting}\n                className=\"w-full bg-gradient-to-r from-[#19A3B0] to-[#007BFF] text-white font-bold py-3 rounded-xl hover:opacity-95 transition-opacity disabled:opacity-50\"\n              >\n                {submitting ? 'Enviando…' : 'Enviar para moderação'}\n              </button>\n            </form>\n          </div>\n        </div>\n      </div>\n    </section>\n  )\n}\n\nfunction StarRatingInput({ value, onChange }) {\n  const [hover, setHover] = useState(null)\n  const display = hover ?? value\n\n  return (\n    <div className=\"flex flex-col gap-1.5\">\n      <div\n        role=\"radiogroup\"\n        aria-label=\"Nota de 1 a 5 estrelas\"\n        className=\"flex items-center gap-0.5 sm:gap-1\"\n        onMouseLeave={() => setHover(null)}\n      >\n        {[1, 2, 3, 4, 5].map((n) => {\n          const filled = n <= display\n          return (\n            <button\n              key={n}\n              type=\"button\"\n              role=\"radio\"\n              aria-checked={value === n}\n              aria-label={`${n} ${n === 1 ? 'estrela' : 'estrelas'}`}\n              className={[\n                'p-1 rounded-lg leading-none transition-all duration-150',\n                'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#19A3B0] focus-visible:ring-offset-2',\n                'hover:scale-110 active:scale-95',\n                filled ? 'text-amber-400 drop-shadow-sm' : 'text-gray-200',\n              ].join(' ')}\n              onMouseEnter={() => setHover(n)}\n              onClick={() => onChange(n)}\n            >\n              <span className=\"text-[2rem] sm:text-[2.25rem] leading-none block\" aria-hidden>\n                ★\n              </span>\n            </button>\n          )\n        })}\n      </div>\n      <p className=\"text-xs text-gray-400\">\n        {value === 1 ? '1 estrela' : `${value} estrelas`} · clique na estrela para escolher\n      </p>\n    </div>\n  )\n}"
+      },
+      "CommentsPage": {
+        "file": "app/src/pages/CommentsPage.jsx",
+        "description": "Página dedicada de comentários com paginação 'Carregar mais'",
+        "dependencies": ["react", "react-router-dom"],
+        "features": [
+          "Lista todos os comentários aprovados",
+          "Paginação com botão 'Carregar mais'",
+          "8 comentários por página"
+        ],
+        "code": "import { useEffect, useState, useCallback } from 'react'\nimport { Link } from 'react-router-dom'\nimport { apiUrl } from '../config.js'\nimport { formatDateTimePtBr } from '../lib/dateLocale.js'\nimport Header from '../components/Header'\nimport Footer from '../components/Footer'\n\nconst PAGE = 8\n\nexport default function CommentsPage() {\n  const [comments, setComments] = useState([])\n  const [total, setTotal] = useState(0)\n  const [loading, setLoading] = useState(true)\n  const [loadingMore, setLoadingMore] = useState(false)\n\n  const load = useCallback(async (offset) => {\n    const r = await fetch(\n      `${apiUrl('public_comments.php')}?limit=${PAGE}&offset=${offset}`\n    )\n    const d = await r.json()\n    if (!d.ok) throw new Error(d.error || 'Erro')\n    return d\n  }, [])\n\n  useEffect(() => {\n    let cancelled = false\n    ;(async () => {\n      setLoading(true)\n      try {\n        const d = await load(0)\n        if (!cancelled) {\n          setComments(d.comments || [])\n          setTotal(d.total ?? 0)\n        }\n      } catch {\n        if (!cancelled) setComments([])\n      } finally {\n        if (!cancelled) setLoading(false)\n      }\n    })()\n    return () => { cancelled = true }\n  }, [load])\n\n  const loadMore = async () => {\n    setLoadingMore(true)\n    try {\n      const d = await load(comments.length)\n      setComments((prev) => [...prev, ...(d.comments || [])])\n    } finally {\n      setLoadingMore(false)\n    }\n  }\n\n  const hasMore = comments.length < total\n\n  return (\n    <div className=\"min-h-screen bg-white\">\n      <Header />\n      <section className=\"pt-24 pb-16 px-4 max-w-3xl mx-auto\">\n        <Link\n          to=\"/\"\n          className=\"inline-flex items-center gap-2 text-[#007BFF] font-semibold text-sm mb-8 hover:underline\"\n        >\n          ← Voltar ao início\n        </Link>\n        <h1 className=\"text-3xl md:text-4xl font-black text-[#007BFF] mb-2\">Avaliações dos clientes</h1>\n        <p className=\"text-gray-500 mb-10\">Comentários aprovados, do mais recente ao mais antigo.</p>\n\n        {loading && <p className=\"text-gray-400\">Carregando…</p>}\n\n        {!loading && comments.length === 0 && (\n          <p className=\"text-gray-500\">Ainda não há comentários publicados.</p>\n        )}\n\n        <div className=\"space-y-6\">\n          {comments.map((c) => (\n            <article\n              key={c.id}\n              className=\"bg-gray-50 rounded-2xl p-5 border border-gray-100 flex gap-4\"\n            >\n              <Avatar src={c.author_photo} name={c.author_name} />\n              <div className=\"flex-1 min-w-0\">\n                <div className=\"flex flex-wrap items-center gap-2 mb-1\">\n                  <span className=\"font-bold text-gray-900\">{c.author_name}</span>\n                  <Stars n={c.rating} />\n                </div>\n                <p className=\"text-gray-600 text-sm leading-relaxed whitespace-pre-wrap\">{c.body}</p>\n                {c.created_at && (\n                  <p className=\"text-gray-400 text-xs mt-2\">{formatDateTimePtBr(c.created_at)}</p>\n                )}\n              </div>\n            </article>\n          ))}\n        </div>\n\n        {hasMore && !loading && (\n          <button\n            type=\"button\"\n            onClick={loadMore}\n            disabled={loadingMore}\n            className=\"mt-10 w-full py-3 rounded-xl border-2 border-[#19A3B0] text-[#19A3B0] font-bold hover:bg-[#19A3B0] hover:text-white transition-colors disabled:opacity-50\"\n          >\n            {loadingMore ? 'Carregando…' : 'Carregar mais'}\n          </button>\n        )}\n      </section>\n      <Footer />\n    </div>\n  )\n}\n\nfunction Avatar({ src, name }) {\n  const letter = name?.charAt(0)?.toUpperCase() || '?'\n  if (src) {\n    return (\n      <img\n        src={src}\n        alt=\"\"\n        className=\"w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow\"\n      />\n    )\n  }\n  return (\n    <div className=\"w-14 h-14 rounded-full bg-[#007BFF] text-white font-black flex items-center justify-center flex-shrink-0 text-lg\">\n      {letter}\n    </div>\n  )\n}\n\nfunction Stars({ n }) {\n  return (\n    <span className=\"text-amber-400 text-sm\" aria-label={`${n} de 5 estrelas`}>\n      {'★'.repeat(n)}\n      <span className=\"text-gray-200\">{'★'.repeat(5 - n)}</span>\n    </span>\n  )\n}"
+      },
+      "AdminDashboard_comments": {
+        "file": "app/src/pages/admin/AdminDashboard.jsx",
+        "description": "Seção de moderação de comentários no painel administrativo",
+        "features": [
+          "Lista comentários por status (pendentes, aprovados, rejeitados, todos)",
+          "Botões para Aprovar, Rejeitar e Excluir comentários",
+          "Mostra avatar, nome, nota, data e conteúdo do comentário",
+          "Excluir também remove arquivo de foto do servidor"
+        ],
+        "key_functions": {
+          "loadComments": "Carrega comentários filtrados por status",
+          "moderate": "Aprova ou rejeita comentário (POST para admin_comments.php)",
+          "deleteComment": "Exclui comentário permanentemente (DELETE)"
+        },
+        "code_moderation_section": "// Estados\nconst [comments, setComments] = useState([])\nconst [commentFilter, setCommentFilter] = useState('pending')\n\n// Carregar comentários\nasync function loadComments() {\n  const d = await apiGet(`admin_comments.php?status=${commentFilter}`)\n  if (d.ok) setComments(d.comments || [])\n}\n\n// Moderar (aprovar/rejeitar)\nasync function moderate(id, action) {\n  const d = await apiPostJson('admin_comments.php', { id, action })\n  if (d.ok) loadComments()\n  else alert(d.error || 'Erro')\n}\n\n// Excluir\nasync function deleteComment(id) {\n  if (!confirm('Excluir este comentário permanentemente?')) return\n  const r = await fetch(apiUrl(`admin_comments.php?id=${id}`), {\n    method: 'DELETE',\n    credentials: 'include',\n  })\n  const d = await r.json()\n  if (d.ok) loadComments()\n  else alert(d.error || 'Erro')\n}\n\n// JSX da seção de comentários (exemplo simplificado):\n{tab === 'comentarios' && (\n  <div>\n    {/* Filtros: pending, approved, rejected, all */}\n    <div className=\"flex gap-2\">\n      {['pending','approved','rejected','all'].map((f) => (\n        <button\n          key={f}\n          onClick={() => setCommentFilter(f)}\n          className={commentFilter === f ? 'active' : ''}\n        >\n          {f === 'pending' && 'Pendentes'}\n          {f === 'approved' && 'Aprovados'}\n          {f === 'rejected' && 'Rejeitados'}\n          {f === 'all' && 'Todos'}\n        </button>\n      ))}\n    </div>\n    \n    {comments.map((c) => (\n      <div key={c.id} className=\"comment-card\">\n        <img src={c.author_photo_path} className=\"avatar\" />\n        <div>\n          <strong>{c.author_name}</strong>\n          <span>{'★'.repeat(c.rating)}</span>\n          <p>{c.body}</p>\n          <p>{new Date(c.created_at).toLocaleString('pt-BR')}</p>\n        </div>\n        \n        {/* Ações */}\n        {commentFilter === 'pending' && (\n          <>\n            <button onClick={() => moderate(c.id, 'approve')}>Aprovar</button>\n            <button onClick={() => moderate(c.id, 'reject')}>Rejeitar</button>\n          </>\n        )}\n        <button onClick={() => deleteComment(c.id)}>Excluir</button>\n      </div>\n    ))}\n  </div>\n)}"
+      }
+    },
+    "routes": {
+      "comment_submit": "POST /api/comment_submit.php - Enviar comentário",
+      "public_comments": "GET /api/public_comments.php?limit=X&offset=Y - Listar aprovados",
+      "admin_comments_list": "GET /api/admin_comments.php?status=pending|approved|rejected|all",
+      "admin_comments_moderate": "POST /api/admin_comments.php - Moderar (approve/reject)",
+      "admin_comments_delete": "DELETE /api/admin_comments.php?id=X - Excluir"
+    }
+  },
+  "status_flow": {
+    "novo": "pending - Comentário enviado, aguardando moderação",
+    "aprovado": "approved - Visível no site público",
+    "rejeitado": "rejected - Não aparece no site, permanece no banco",
+    "excluido": "DELETE - Removido do banco e foto deletada"
+  },
+  "files_list": [
+    "api/public_comments.php",
+    "api/comment_submit.php",
+    "api/admin_comments.php",
+    "app/src/components/CommentsSection.jsx",
+    "app/src/pages/CommentsPage.jsx",
+    "app/src/pages/admin/AdminDashboard.jsx (seção de comentários)"
+  ]
+}

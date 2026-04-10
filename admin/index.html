@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" type="image/png" href="/logo/favicon.png" />
   <link rel="apple-touch-icon" href="/logo/favicon.png" />
-  <link rel="stylesheet" href="/admin/css/admin.css?v=15" />
+  <link rel="stylesheet" href="/admin/css/admin.css?v=16" />
   <script>
     /* Sair: precisa funcionar antes do admin.js e com path /admin ou /admin/index.html */
     (function () {
@@ -51,6 +51,9 @@
         </button>
         <button type="button" class="admin-tab" data-tab="collections">
           <i class="fa-solid fa-layer-group"></i> <span>Coleções</span>
+        </button>
+        <button type="button" class="admin-tab" data-tab="comments">
+          <i class="fa-solid fa-comments"></i> <span>Avaliações</span>
         </button>
         <button type="button" class="admin-tab" data-tab="users" id="tabUsers" hidden>
           <i class="fa-solid fa-users"></i> <span>Usuários</span>
@@ -174,7 +177,7 @@
             <strong class="analytics-kpi__value" id="kpiAvgViews">0</strong>
           </article>
           <article class="analytics-kpi">
-            <span class="analytics-kpi__label">Cliques totais</span>
+            <span class="analytics-kpi__label">Seleções + ao carrinho</span>
             <strong class="analytics-kpi__value" id="kpiClicks">0</strong>
           </article>
           <article class="analytics-kpi">
@@ -182,7 +185,7 @@
             <strong class="analytics-kpi__value" id="kpiInteractions">0</strong>
           </article>
           <article class="analytics-kpi">
-            <span class="analytics-kpi__label">Taxa de conversão</span>
+            <span class="analytics-kpi__label">Engajamento (sel.+carrinho / visita)</span>
             <strong class="analytics-kpi__value" id="kpiConversion">0%</strong>
           </article>
         </div>
@@ -228,8 +231,15 @@
             <div class="analytics-table" id="tableOs"></div>
           </div>
           <div class="chart-card">
-            <h3><i class="fa-solid fa-computer-mouse"></i> Eventos de clique</h3>
-            <div class="analytics-table" id="tableClicks"></div>
+            <h3><i class="fa-solid fa-bag-shopping"></i> Mais clicados na vitrine</h3>
+            <p class="chart-card__hint">Eventos <code>select_item</code> (GA4), por produto</p>
+            <div class="analytics-table" id="tableTopSelectItems"></div>
+          </div>
+          <div class="chart-card">
+            <h3><i class="fa-solid fa-cart-plus"></i> Mais adicionados ao carrinho</h3>
+            <p class="chart-card__hint">Unidades em <code>add_to_cart</code> (GA4), por <code>item_id</code></p>
+            <p class="chart-card__hint chart-card__hint--sub" id="tableTopAddToCartHint" hidden></p>
+            <div class="analytics-table" id="tableTopAddToCart"></div>
           </div>
         </div>
       </section>
@@ -339,6 +349,54 @@
           <button type="button" class="btn btn--primary editor-only" id="emptyBtnCollection">
             <i class="fa-solid fa-plus"></i> Criar primeira coleção
           </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AVALIAÇÕES/COMENTÁRIOS ===== -->
+    <section id="panel-comments" class="admin-panel">
+      <div class="panel-head">
+        <h2><i class="fa-solid fa-comments"></i> Avaliações</h2>
+        <p class="panel-hint">Modere as avaliações enviadas pelos clientes. Aprove, rejeite ou exclua comentários.</p>
+      </div>
+      <div class="panel-filters">
+        <div class="filter-group">
+          <button type="button" class="btn btn--ghost btn--sm active" data-filter="pending" id="filterPending">
+            <i class="fa-solid fa-clock"></i> Pendentes
+            <span class="badge" id="badgePending">0</span>
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" data-filter="approved" id="filterApproved">
+            <i class="fa-solid fa-check"></i> Aprovados
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" data-filter="rejected" id="filterRejected">
+            <i class="fa-solid fa-xmark"></i> Rejeitados
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" data-filter="all" id="filterAll">
+            <i class="fa-solid fa-list"></i> Todos
+          </button>
+        </div>
+        <button type="button" class="btn btn--primary btn--sm" id="btnRefreshComments">
+          <i class="fa-solid fa-rotate"></i> Atualizar
+        </button>
+      </div>
+      <div class="table-wrap" id="tableWrapComments">
+        <table class="data-table" id="tableComments">
+          <thead>
+            <tr>
+              <th class="th-avatar"></th>
+              <th>Cliente</th>
+              <th>Avaliação</th>
+              <th>Comentário</th>
+              <th>Data</th>
+              <th>Status</th>
+              <th class="th-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyComments"></tbody>
+        </table>
+        <div class="empty-state" id="emptyComments" hidden>
+          <i class="fa-solid fa-comments empty-state__icon"></i>
+          <p>Nenhuma avaliação encontrada.</p>
         </div>
       </div>
     </section>
@@ -555,6 +613,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <script src="/admin/js/config.js?v=3"></script>
   <script src="/js/analytics.js?v=1"></script>
-  <script src="/admin/js/admin.js?v=9"></script>
+  <script src="/admin/js/admin.js?v=10"></script>
 </body>
 </html>

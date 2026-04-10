@@ -328,18 +328,37 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'analytics' && ($segments[1] ?
             'orderBys' => [['metric' => ['metricName' => 'sessions'], 'desc' => true]],
             'limit' => 10,
         ]);
-        $clicks = $run([
-            'dateRanges' => $dateRanges,
-            'dimensions' => [['name' => 'eventName']],
-            'metrics' => [['name' => 'eventCount']],
-            'dimensionFilter' => [
+        $gaEventExact = function (string $eventName): array {
+            return [
                 'filter' => [
                     'fieldName' => 'eventName',
-                    'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'click'],
+                    'stringFilter' => ['matchType' => 'EXACT', 'value' => $eventName],
                 ],
-            ],
-            'orderBys' => [['metric' => ['metricName' => 'eventCount'], 'desc' => true]],
-            'limit' => 10,
+            ];
+        };
+        $aggSelectItem = $run([
+            'dateRanges' => $dateRanges,
+            'metrics' => [['name' => 'eventCount']],
+            'dimensionFilter' => $gaEventExact('select_item'),
+        ]);
+        $aggAddToCart = $run([
+            'dateRanges' => $dateRanges,
+            'metrics' => [['name' => 'eventCount']],
+            'dimensionFilter' => $gaEventExact('add_to_cart'),
+        ]);
+        $topSelectItems = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'itemId'], ['name' => 'itemName']],
+            'metrics' => [['name' => 'itemsClickedInList']],
+            'orderBys' => [['metric' => ['metricName' => 'itemsClickedInList'], 'desc' => true]],
+            'limit' => 15,
+        ]);
+        $topAddToCart = $run([
+            'dateRanges' => $dateRanges,
+            'dimensions' => [['name' => 'itemId'], ['name' => 'itemName']],
+            'metrics' => [['name' => 'itemsAddedToCart']],
+            'orderBys' => [['metric' => ['metricName' => 'itemsAddedToCart'], 'desc' => true]],
+            'limit' => 15,
         ]);
 
         $tRows = $totals['rows'] ?? [];
@@ -350,11 +369,17 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'analytics' && ($segments[1] ?
         $totalViews = (float) (($m[2]['value'] ?? 0) ?: 0);
         $totalEvents = (float) (($m[3]['value'] ?? 0) ?: 0);
 
-        $clickRows = ga4_rows($clicks, ['eventName'], ['eventCount']);
-        $totalClicks = 0.0;
-        foreach ($clickRows as $row) {
-            $totalClicks += (float) ($row['eventCount'] ?? 0);
+        $aggSelRows = $aggSelectItem['rows'] ?? [];
+        $aggAddRows = $aggAddToCart['rows'] ?? [];
+        $selectItemEvents = 0.0;
+        if (!empty($aggSelRows[0]['metricValues'][0]['value'])) {
+            $selectItemEvents = (float) $aggSelRows[0]['metricValues'][0]['value'];
         }
+        $addToCartEvents = 0.0;
+        if (!empty($aggAddRows[0]['metricValues'][0]['value'])) {
+            $addToCartEvents = (float) $aggAddRows[0]['metricValues'][0]['value'];
+        }
+        $totalClicks = $selectItemEvents + $addToCartEvents;
 
         $rtRows = $rt['rows'] ?? [];
         $online = 0.0;
@@ -384,7 +409,12 @@ if ($method === 'GET' && ($segments[0] ?? '') === 'analytics' && ($segments[1] ?
             'byChannel' => ga4_rows($byChannel, ['name'], ['sessions']),
             'byCountry' => ga4_rows($byCountry, ['country'], ['sessions', 'views']),
             'byCity' => ga4_rows($byCity, ['city', 'country'], ['sessions']),
-            'topClickedEvents' => $clickRows,
+            'topSelectItems' => ga4_rows($topSelectItems, ['itemId', 'itemName'], ['eventCount']),
+            'topAddToCart' => ga4_rows($topAddToCart, ['itemId', 'itemName'], ['eventCount']),
+            'commerceTotals' => [
+                'selectItemEvents' => $selectItemEvents,
+                'addToCartEvents' => $addToCartEvents,
+            ],
         ]);
     } catch (Throwable $e) {
         json_out(200, [

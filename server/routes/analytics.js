@@ -69,8 +69,30 @@ router.get('/summary', async (req, res) => {
       },
     });
 
-    const [rt, totals, timeline, byHour, byWeekday, byDevice, byBrowser, byOs, byChannel, byCountry, byCity, clicksByEvent] =
-      await Promise.all([
+    const eventExact = (name) => ({
+      filter: {
+        fieldName: 'eventName',
+        stringFilter: { matchType: 'EXACT', value: name },
+      },
+    });
+
+    const [
+      rt,
+      totals,
+      timeline,
+      byHour,
+      byWeekday,
+      byDevice,
+      byBrowser,
+      byOs,
+      byChannel,
+      byCountry,
+      byCity,
+      aggSelectItem,
+      aggAddToCart,
+      topSelectItems,
+      topAddToCart,
+    ] = await Promise.all([
         client.runRealtimeReport({
           property: `properties/${cfg.propertyId}`,
           metrics: [{ name: 'activeUsers' }],
@@ -145,16 +167,28 @@ router.get('/summary', async (req, res) => {
         }),
         runReport(client, cfg.propertyId, {
           dateRanges,
-          dimensions: [{ name: 'eventName' }],
           metrics: [{ name: 'eventCount' }],
-          dimensionFilter: {
-            filter: {
-              fieldName: 'eventName',
-              stringFilter: { matchType: 'CONTAINS', value: 'click' },
-            },
-          },
-          orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
-          limit: 10,
+          dimensionFilter: eventExact('select_item'),
+        }),
+        runReport(client, cfg.propertyId, {
+          dateRanges,
+          metrics: [{ name: 'eventCount' }],
+          dimensionFilter: eventExact('add_to_cart'),
+        }),
+        /* Métricas itemsClickedInList / itemsAddedToCart já são por tipo de evento; filtro eventName + dimensões de item pode esvaziar o relatório na API. */
+        runReport(client, cfg.propertyId, {
+          dateRanges,
+          dimensions: [{ name: 'itemId' }, { name: 'itemName' }],
+          metrics: [{ name: 'itemsClickedInList' }],
+          orderBys: [{ metric: { metricName: 'itemsClickedInList' }, desc: true }],
+          limit: 15,
+        }),
+        runReport(client, cfg.propertyId, {
+          dateRanges,
+          dimensions: [{ name: 'itemId' }, { name: 'itemName' }],
+          metrics: [{ name: 'itemsAddedToCart' }],
+          orderBys: [{ metric: { metricName: 'itemsAddedToCart' }, desc: true }],
+          limit: 15,
         }),
       ]);
 
@@ -162,10 +196,9 @@ router.get('/summary', async (req, res) => {
     const totalSessions = toNum(totals.rows?.[0]?.metricValues?.[1]?.value);
     const totalViews = toNum(totals.rows?.[0]?.metricValues?.[2]?.value);
     const totalEvents = toNum(totals.rows?.[0]?.metricValues?.[3]?.value);
-    const totalClicks = mapRows(clicksByEvent.rows, ['eventName'], ['eventCount']).reduce(
-      (acc, row) => acc + toNum(row.eventCount),
-      0
-    );
+    const selectItemEvents = toNum(aggSelectItem.rows?.[0]?.metricValues?.[0]?.value);
+    const addToCartEvents = toNum(aggAddToCart.rows?.[0]?.metricValues?.[0]?.value);
+    const totalClicks = selectItemEvents + addToCartEvents;
 
     const avgViewsPerVisitor = totalUsers > 0 ? totalViews / totalUsers : 0;
     const conversionRate = totalSessions > 0 ? (totalClicks / totalSessions) * 100 : 0;
@@ -192,7 +225,12 @@ router.get('/summary', async (req, res) => {
       byChannel: mapRows(byChannel.rows, ['name'], ['sessions']),
       byCountry: mapRows(byCountry.rows, ['country'], ['sessions', 'views']),
       byCity: mapRows(byCity.rows, ['city', 'country'], ['sessions']),
-      topClickedEvents: mapRows(clicksByEvent.rows, ['eventName'], ['eventCount']),
+      topSelectItems: mapRows(topSelectItems.rows, ['itemId', 'itemName'], ['eventCount']),
+      topAddToCart: mapRows(topAddToCart.rows, ['itemId', 'itemName'], ['eventCount']),
+      commerceTotals: {
+        selectItemEvents,
+        addToCartEvents,
+      },
     });
   } catch (err) {
     return res.status(500).json({

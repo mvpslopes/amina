@@ -16,7 +16,7 @@
 
   <link rel="icon" type="image/png" href="logo/favicon.png" />
   <link rel="apple-touch-icon" href="logo/favicon.png" />
-  <link rel="stylesheet" href="css/style.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
 </head>
 <body class="splash-active">
 
@@ -294,6 +294,142 @@
     </div>
   </section>
 
+  <!-- ===== DEPOIMENTOS (3 MAIS RECENTES) ===== -->
+  <section class="testimonials" id="depoimentos">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">O que dizem</span>
+        <h2 class="section-title">Quem já <em>reina</em></h2>
+      </div>
+      <div class="testimonials__grid" id="topCommentsGrid">
+        <!-- Loading skeleton -->
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars" style="opacity:0.3;"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+          <p style="background:linear-gradient(90deg,#f0ebe1 25%,#faf7f2 50%,#f0ebe1 75%);background-size:200% 100%;animation:skeletonShimmer 1.4s infinite;height:60px;border-radius:4px;"></p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar" style="background:linear-gradient(135deg,#f0ebe1 0%,#faf7f2 100%);"></div>
+            <div><strong style="background:#f0ebe1;height:12px;width:80px;display:block;border-radius:4px;"></strong><span style="background:#f0ebe1;height:10px;width:60px;display:block;border-radius:4px;margin-top:4px;"></span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars" style="opacity:0.3;"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+          <p style="background:linear-gradient(90deg,#f0ebe1 25%,#faf7f2 50%,#f0ebe1 75%);background-size:200% 100%;animation:skeletonShimmer 1.4s infinite;height:60px;border-radius:4px;"></p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar" style="background:linear-gradient(135deg,#f0ebe1 0%,#faf7f2 100%);"></div>
+            <div><strong style="background:#f0ebe1;height:12px;width:80px;display:block;border-radius:4px;"></strong><span style="background:#f0ebe1;height:10px;width:60px;display:block;border-radius:4px;margin-top:4px;"></span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars" style="opacity:0.3;"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+          <p style="background:linear-gradient(90deg,#f0ebe1 25%,#faf7f2 50%,#f0ebe1 75%);background-size:200% 100%;animation:skeletonShimmer 1.4s infinite;height:60px;border-radius:4px;"></p>
+          <div class="testimonial-card__author">
+            <div class="testimonial-card__avatar" style="background:linear-gradient(135deg,#f0ebe1 0%,#faf7f2 100%);"></div>
+            <div><strong style="background:#f0ebe1;height:12px;width:80px;display:block;border-radius:4px;"></strong><span style="background:#f0ebe1;height:10px;width:60px;display:block;border-radius:4px;margin-top:4px;"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COMENTÁRIOS / AVALIAÇÕES (FORMULÁRIO + DEMAIS) ===== -->
+  <section class="comments-section" id="avaliacoes">
+    <div class="container">
+      <div class="section-header">
+        <span class="eyebrow">Depoimentos</span>
+        <h2 class="section-title">Avaliações das <em>clientes</em></h2>
+      </div>
+      <div class="comments-section__grid">
+        <!-- Lista de Comentários -->
+        <div class="comments-list" id="commentsList">
+          <div class="comments-list__header">
+            <span class="comments-list__count" id="commentsCount">Carregando...</span>
+            <a href="avaliacoes.html" class="comments-list__view-all">Ver todas <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
+          <!-- Loading Skeleton -->
+          <div class="comments-list__loading" id="commentsLoading">
+            <div class="comment-skeleton">
+              <div class="comment-skeleton__header">
+                <div class="comment-skeleton__avatar"></div>
+                <div class="comment-skeleton__lines">
+                  <div class="comment-skeleton__line"></div>
+                  <div class="comment-skeleton__line comment-skeleton__line--short"></div>
+                </div>
+              </div>
+              <div class="comment-skeleton__body"></div>
+            </div>
+            <div class="comment-skeleton">
+              <div class="comment-skeleton__header">
+                <div class="comment-skeleton__avatar"></div>
+                <div class="comment-skeleton__lines">
+                  <div class="comment-skeleton__line"></div>
+                  <div class="comment-skeleton__line comment-skeleton__line--short"></div>
+                </div>
+              </div>
+              <div class="comment-skeleton__body"></div>
+            </div>
+          </div>
+          <!-- Comments will be loaded here -->
+        </div>
+
+        <!-- Formulário de Envio -->
+        <div class="comments-form">
+          <h3 class="comments-form__title">Deixe sua avaliação</h3>
+          <p class="comments-form__subtitle">Compartilhe sua experiência com a ÂMINA</p>
+          
+          <div class="comments-form__message comments-form__message--success" id="commentSuccess" hidden>
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Avaliação enviada! Aguardando moderação.</span>
+          </div>
+          <div class="comments-form__message comments-form__message--error" id="commentError" hidden>
+            <i class="fa-solid fa-exclamation-circle"></i>
+            <span id="commentErrorText">Erro ao enviar.</span>
+          </div>
+
+          <form id="commentForm">
+            <div class="comments-form__group">
+              <label class="comments-form__label" for="commentName">Seu nome</label>
+              <input type="text" id="commentName" name="author_name" class="comments-form__input" placeholder="Como gostaria de ser chamada?" required maxlength="120">
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label">Sua avaliação</label>
+              <div class="comments-form__rating" id="starRating">
+                <span class="comments-form__star" data-value="1"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="2"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="3"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="4"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="5"><i class="fa-solid fa-star"></i></span>
+              </div>
+              <input type="hidden" name="rating" id="ratingInput" value="5">
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label" for="commentBody">Seu comentário</label>
+              <textarea id="commentBody" name="body" class="comments-form__textarea" placeholder="Conte-nos sobre sua experiência com nossos produtos..." required maxlength="5000"></textarea>
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label">Foto (opcional)</label>
+              <div class="comments-form__file">
+                <input type="file" id="commentPhoto" name="photo" class="comments-form__file-input" accept="image/jpeg,image/png,image/webp">
+                <div class="comments-form__file-label">
+                  <i class="fa-solid fa-camera"></i>
+                  <span class="comments-form__file-text" id="fileText">Clique para adicionar foto</span>
+                  <img src="" alt="" class="comments-form__file-preview" id="filePreview" hidden>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="comments-form__submit" id="commentSubmit">
+              <span>Enviar Avaliação</span>
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== COLEÇÕES ===== -->
   <section class="collections" id="colecoes">
     <div class="container">
@@ -405,57 +541,6 @@
           <i class="fa-solid fa-rotate-left"></i>
           <h4>Troca Fácil</h4>
           <p>30 dias para troca ou devolução, sem burocracia</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== DEPOIMENTOS ===== -->
-  <section class="testimonials">
-    <div class="container">
-      <div class="section-header">
-        <span class="eyebrow">O que dizem</span>
-        <h2 class="section-title">Quem já <em>reina</em></h2>
-      </div>
-      <div class="testimonials__grid">
-        <div class="testimonial-card">
-          <div class="testimonial-card__stars">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p>"A blusa chegou em perfeito estado, qualidade incrível. Me senti uma rainha mesmo! A ÂMINA capturou exatamente o que eu precisava para me sentir poderosa."</p>
-          <div class="testimonial-card__author">
-            <div class="testimonial-card__avatar avatar-1"></div>
-            <div>
-              <strong>Juliana M.</strong>
-              <span>São Paulo, SP</span>
-            </div>
-          </div>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-card__stars">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p>"Comprei o conjunto Âmina Set e recebi mil elogios no trabalho. Essa marca entende moda de verdade, peças gringas com preço justo e entrega super rápida."</p>
-          <div class="testimonial-card__author">
-            <div class="testimonial-card__avatar avatar-2"></div>
-            <div>
-              <strong>Carla F.</strong>
-              <span>Rio de Janeiro, RJ</span>
-            </div>
-          </div>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-card__stars">
-            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-          </div>
-          <p>"A história da rainha Âmina me tocou profundamente. Mais do que moda, é empoderamento. Já fiz três compras e voltarei sempre. Recomendo de olhos fechados!"</p>
-          <div class="testimonial-card__author">
-            <div class="testimonial-card__avatar avatar-3"></div>
-            <div>
-              <strong>Priscila A.</strong>
-              <span>Belo Horizonte, MG</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -574,6 +659,7 @@
   <script src="js/cart-store.js?v=12"></script>
   <script src="js/config.js?v=13"></script>
   <script src="js/analytics.js?v=2"></script>
-  <script src="js/main.js?v=15"></script>
+  <script src="js/main.js?v=18"></script>
+  <script src="js/comments.js?v=2"></script>
 </body>
 </html>

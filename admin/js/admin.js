@@ -86,7 +86,7 @@
   const btnToggle = document.getElementById('btnSidebarToggle');
 
   const pageTitleEl = document.getElementById('pageTitle');
-  const tabLabels = { dashboard: 'Dashboard', products: 'Produtos', collections: 'Coleções', users: 'Usuários' };
+  const tabLabels = { dashboard: 'Dashboard', products: 'Produtos', collections: 'Coleções', comments: 'Avaliações', users: 'Usuários' };
 
   function closeSidebarMobile() {
     if (window.matchMedia('(max-width: 900px)').matches) {
@@ -117,6 +117,7 @@
     if (pageTitleEl) pageTitleEl.textContent = tabLabels[name] || name;
     if (name === 'users' && u.role === 'root') loadUsers();
     if (name === 'dashboard') loadDashboard();
+    if (name === 'comments') loadComments();
     closeSidebarMobile();
   }
 
@@ -416,10 +417,40 @@
       { label: 'Sistema', value: (r) => r.name || 'Desconhecido' },
       { label: 'Sessões', value: (r) => fmtInt(r.sessions) },
     ]);
-    buildSimpleTable('tableClicks', data.topClickedEvents || [], [
-      { label: 'Evento', value: (r) => r.eventName || 'click' },
-      { label: 'Ocorrências', value: (r) => fmtInt(r.eventCount) },
+    const itemIdLabel = (r) => {
+      const id = r.itemId != null && String(r.itemId).trim() !== '' ? String(r.itemId).trim() : '';
+      return id || '—';
+    };
+    const itemNameLabel = (r) => {
+      const n = r.itemName != null && String(r.itemName).trim() !== '' ? String(r.itemName).trim() : '';
+      return n || '(sem nome)';
+    };
+    buildSimpleTable('tableTopSelectItems', data.topSelectItems || [], [
+      { label: 'Cód.', value: itemIdLabel },
+      { label: 'Produto', value: itemNameLabel },
+      { label: 'Seleções', value: (r) => fmtInt(r.eventCount) },
     ]);
+    buildSimpleTable('tableTopAddToCart', data.topAddToCart || [], [
+      { label: 'Cód.', value: itemIdLabel },
+      { label: 'Produto', value: itemNameLabel },
+      { label: 'Adições', value: (r) => fmtInt(r.eventCount) },
+    ]);
+    const addHint = document.getElementById('tableTopAddToCartHint');
+    if (addHint) {
+      const totalAdd = Number((data.commerceTotals && data.commerceTotals.addToCartEvents) || 0);
+      const rowsAdd = (data.topAddToCart && data.topAddToCart.length) || 0;
+      if (totalAdd <= 0 && rowsAdd === 0) {
+        addHint.textContent =
+          'Ainda sem dados de carrinho neste período: confirme o deploy do site com o JS atual, ou aguarde tráfego real (o GA pode demorar algumas horas a agregar).';
+        addHint.hidden = false;
+      } else if (totalAdd > 0 && rowsAdd === 0) {
+        addHint.textContent =
+          'O total de adições no GA é > 0, mas a tabela por produto está vazia — costuma ser dados antigos sem item_id ou atraso de processamento; novas adições após a correção devem aparecer.';
+        addHint.hidden = false;
+      } else {
+        addHint.hidden = true;
+      }
+    }
   }
 
   async function loadAnalyticsOverview(daysArg) {
@@ -463,7 +494,14 @@
       renderAnalyticsCharts(data);
       renderAnalyticsTables(data);
       setAnalyticsVisible(true);
-      setAnalyticsStatus(`Período: últimos ${days} dia(s).`, false);
+      const ct = data.commerceTotals || {};
+      const selT = Number(ct.selectItemEvents);
+      const addT = Number(ct.addToCartEvents);
+      const extra =
+        (Number.isFinite(selT) && selT > 0) || (Number.isFinite(addT) && addT > 0)
+          ? ` Totais GA4 no período: ${fmtInt(selT || 0)} seleções na vitrine · ${fmtInt(addT || 0)} adições ao carrinho.`
+          : '';
+      setAnalyticsStatus(`Período: últimos ${days} dia(s).${extra}`, false);
     } catch (err) {
       const msg = String(err && err.message ? err.message : '');
       if (/rota não encontrada|404|not found/i.test(msg)) {
@@ -1157,6 +1195,157 @@
     }
   });
 
+  /* ===== COMENTÁRIOS / AVALIAÇÕES ===== */
+  let currentCommentFilter = 'pending';
+
+  const filterButtons = {
+    pending: document.getElementById('filterPending'),
+    approved: document.getElementById('filterApproved'),
+    rejected: document.getElementById('filterRejected'),
+    all: document.getElementById('filterAll'),
+  };
+
+  function updateFilterButtons() {
+    Object.keys(filterButtons).forEach(key => {
+      const btn = filterButtons[key];
+      if (btn) btn.classList.toggle('active', key === currentCommentFilter);
+    });
+  }
+
+  Object.keys(filterButtons).forEach(key => {
+    filterButtons[key]?.addEventListener('click', () => {
+      currentCommentFilter = key;
+      updateFilterButtons();
+      loadComments();
+    });
+  });
+
+  document.getElementById('btnRefreshComments')?.addEventListener('click', loadComments);
+
+  async function loadComments() {
+    const tbody = document.getElementById('tbodyComments');
+    const empty = document.getElementById('emptyComments');
+    const tableWrap = document.getElementById('tableWrapComments');
+
+    try {
+      const data = await api(`/api/admin_comments.php?status=${currentCommentFilter}`);
+      
+      if (data.ok && data.comments) {
+        // Atualiza badge de pendentes
+        if (currentCommentFilter === 'pending' || currentCommentFilter === 'all') {
+          const pendingCount = data.comments.filter(c => c.status === 'pending').length;
+          const badge = document.getElementById('badgePending');
+          if (badge) badge.textContent = pendingCount;
+        }
+
+        if (data.comments.length === 0) {
+          if (tbody) tbody.innerHTML = '';
+          if (empty) empty.hidden = false;
+          if (tableWrap) tableWrap.classList.add('empty');
+          return;
+        }
+
+        if (empty) empty.hidden = true;
+        if (tableWrap) tableWrap.classList.remove('empty');
+
+        if (tbody) {
+          tbody.innerHTML = data.comments.map(c => renderCommentRow(c)).join('');
+        }
+      }
+    } catch (err) {
+      toast('Erro ao carregar avaliações: ' + err.message, false);
+    }
+  }
+
+  function renderCommentRow(c) {
+    const date = new Date(c.created_at).toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const stars = Array(5).fill(0).map((_, i) => 
+      `<i class="fa-${i < c.rating ? 'solid' : 'regular'} fa-star ${i >= c.rating ? 'empty' : ''}"></i>`
+    ).join('');
+
+    const avatar = c.author_photo_path 
+      ? `<img src="${escapeHtml(c.author_photo_path)}" alt="" class="comment-avatar">`
+      : `<div class="comment-avatar">${escapeHtml(c.author_name.charAt(0).toUpperCase())}</div>`;
+
+    const statusLabels = {
+      pending: { text: 'Pendente', class: 'status-badge--pending', icon: 'fa-clock' },
+      approved: { text: 'Aprovado', class: 'status-badge--approved', icon: 'fa-check' },
+      rejected: { text: 'Rejeitado', class: 'status-badge--rejected', icon: 'fa-xmark' }
+    };
+    const status = statusLabels[c.status] || statusLabels.pending;
+
+    const canModerate = u.role !== 'operador';
+
+    return `
+      <tr data-id="${c.id}">
+        <td>${avatar}</td>
+        <td><strong>${escapeHtml(c.author_name)}</strong></td>
+        <td><span class="comment-stars">${stars}</span></td>
+        <td><span class="comment-text" title="${escapeHtml(c.body)}">${escapeHtml(c.body)}</span></td>
+        <td class="muted">${date}</td>
+        <td><span class="status-badge ${status.class}"><i class="fa-solid ${status.icon}"></i> ${status.text}</span></td>
+        <td>
+          <div class="comment-actions">
+            ${canModerate && c.status !== 'approved' ? `
+              <button type="button" class="btn btn--sm btn--success" onclick="moderateComment(${c.id}, 'approve')" title="Aprovar">
+                <i class="fa-solid fa-check"></i>
+              </button>
+            ` : ''}
+            ${canModerate && c.status !== 'rejected' ? `
+              <button type="button" class="btn btn--sm" onclick="moderateComment(${c.id}, 'reject')" title="Rejeitar" style="background:#78716c;color:#fff;border-color:#78716c;">
+                <i class="fa-solid fa-ban"></i>
+              </button>
+            ` : ''}
+            ${canModerate ? `
+              <button type="button" class="btn btn--sm btn--danger" onclick="deleteComment(${c.id})" title="Excluir permanentemente">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  window.moderateComment = async function(id, action) {
+    try {
+      await api('/api/admin_comments.php', {
+        method: 'POST',
+        body: JSON.stringify({ id, action })
+      });
+      toast(action === 'approve' ? 'Avaliação aprovada ✓' : 'Avaliação rejeitada', true);
+      loadComments();
+    } catch (err) {
+      toast(err.message, false);
+    }
+  };
+
+  window.deleteComment = async function(id) {
+    if (!confirm('Tem certeza que deseja excluir esta avaliação permanentemente?\n\nEsta ação não pode ser desfeita.')) return;
+    
+    try {
+      await api(`/api/admin_comments.php?id=${id}`, { method: 'DELETE' });
+      toast('Avaliação excluída ✓', true);
+      loadComments();
+    } catch (err) {
+      toast(err.message, false);
+    }
+  };
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   /* ===== INIT ===== */
   document.querySelectorAll('#analyticsPeriodFilters [data-days]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1168,5 +1357,5 @@
     });
   });
 
-  Promise.all([loadProducts(), loadCollections(), loadCollectionsForChecks()]).catch(err => toast(err.message, false));
+  Promise.all([loadProducts(), loadCollections(), loadCollectionsForChecks(), loadComments()]).catch(err => toast(err.message, false));
 })();

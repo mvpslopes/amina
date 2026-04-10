@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="ÂMINA — Avaliações e depoimentos de nossas clientes. Moda gringa de força e superação." />
+  <title>Avaliações — ÂMINA</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="icon" type="image/png" href="logo/favicon.png" />
+  <link rel="apple-touch-icon" href="logo/favicon.png" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
+</head>
+<body class="splash-active">
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splash-screen">
+    <span class="splash__corner splash__corner--tl"></span>
+    <span class="splash__corner splash__corner--tr"></span>
+    <span class="splash__corner splash__corner--bl"></span>
+    <span class="splash__corner splash__corner--br"></span>
+    <div class="splash__inner">
+      <p class="splash__stars">✦ &nbsp; ✦ &nbsp; ✦</p>
+      <img src="logo/logo-amina-3.png" alt="ÂMINA" class="splash__logo" />
+      <div class="splash__line"></div>
+      <p class="splash__tagline">Moda Gringa de Força e Superação</p>
+      <div class="splash__dots">
+        <span class="splash__dot"></span>
+        <span class="splash__dot"></span>
+        <span class="splash__dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var splash = document.getElementById('splash-screen');
+      var SPLASH_MIN_MS = 5000;
+      var STORAGE_KEY = 'amina_splash_seen';
+      var finished = false;
+
+      function hideSplash() {
+        if (finished) return;
+        finished = true;
+        splash.classList.add('splash--hidden');
+        document.body.classList.remove('splash-active');
+        try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
+        setTimeout(function () { splash.remove(); }, 900);
+      }
+
+      try {
+        if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+          hideSplash();
+          return;
+        }
+      } catch (e) {}
+
+      var splashStart = Date.now();
+      var timer = setTimeout(hideSplash, SPLASH_MIN_MS);
+      window.addEventListener('load', function () {
+        var elapsed = Date.now() - splashStart;
+        clearTimeout(timer);
+        var wait = Math.max(0, SPLASH_MIN_MS - elapsed);
+        setTimeout(hideSplash, wait);
+      });
+    })();
+  </script>
+
+  <div class="announcement-bar">
+    <p>Frete grátis acima de R$499 &nbsp;|&nbsp; Novas coleções toda semana &nbsp;|&nbsp; <a href="index.html#sobre">Conheça a história de Âmina</a></p>
+  </div>
+
+  <header class="header" id="header">
+    <div class="header__inner">
+      <button type="button" class="header__menu-btn" id="menuBtn" aria-label="Abrir menu"
+        onclick="(function(){var m=document.getElementById('mobileMenu'),o=document.getElementById('overlay');if(m&&o){m.classList.add('open');o.classList.add('active');document.body.style.overflow='hidden';}})();return false;">
+        <span></span><span></span><span></span>
+      </button>
+
+      <a href="index.html" class="header__logo">
+        <img src="logo/logo-amina-4.png" alt="ÂMINA" class="header__logo-img" />
+      </a>
+
+      <nav class="header__nav" id="headerNav">
+        <a href="index.html#colecoes">Coleções</a>
+        <a href="index.html#novidades">Novidades</a>
+        <a href="index.html#lookbook">Lookbook</a>
+        <a href="index.html#sobre">Nossa História</a>
+        <a href="index.html#contato">Contato</a>
+      </nav>
+
+      <div class="header__actions">
+        <a href="admin/login.html" class="header__internal-btn" aria-label="Área interna">
+          <i class="fa-solid fa-lock"></i>
+          <span class="header__internal-btn-text">Área interna</span>
+        </a>
+        <button type="button" class="btn-icon" aria-label="Buscar" onclick="alert('Funcionalidade em desenvolvimento')">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+        <a href="#" class="btn-icon" id="headerCartBtn" aria-label="Carrinho">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="header__cart-badge" id="headerCartBadge">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button type="button" class="mobile-menu__close" aria-label="Fechar menu"
+      onclick="(function(){var m=document.getElementById('mobileMenu'),o=document.getElementById('overlay');if(m&&o){m.classList.remove('open');o.classList.remove('active');document.body.style.overflow='';}})();return false;">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <nav class="mobile-menu__nav">
+      <a href="index.html#colecoes" onclick="closeMobileMenu()">Coleções</a>
+      <a href="index.html#novidades" onclick="closeMobileMenu()">Novidades</a>
+      <a href="index.html#lookbook" onclick="closeMobileMenu()">Lookbook</a>
+      <a href="index.html#sobre" onclick="closeMobileMenu()">Nossa História</a>
+      <a href="index.html#contato" onclick="closeMobileMenu()">Contato</a>
+    </nav>
+  </div>
+
+  <div class="overlay" id="overlay"
+    onclick="(function(){var m=document.getElementById('mobileMenu'),o=document.getElementById('overlay');if(m&&o){m.classList.remove('open');o.classList.remove('active');document.body.style.overflow='';}})();return false;">
+  </div>
+
+  <script>
+    function closeMobileMenu() {
+      var m = document.getElementById('mobileMenu');
+      var o = document.getElementById('overlay');
+      if (m && o) {
+        m.classList.remove('open');
+        o.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+  </script>
+
+  <!-- Main Content -->
+  <main class="comments-page">
+    <div class="container">
+      <a href="index.html" class="product-back">
+        <i class="fa-solid fa-arrow-left"></i> Voltar ao início
+      </a>
+
+      <div class="comments-page__header">
+        <span class="eyebrow">Depoimentos</span>
+        <h1 class="section-title">Avaliações das <em>clientes</em></h1>
+      </div>
+
+      <div class="comments-page__grid">
+        <!-- Lista de Comentários -->
+        <div class="comments-page__list" id="commentsPageList">
+          <!-- Loading Skeleton -->
+          <div class="comments-list__loading" id="commentsPageLoading">
+            <div class="comment-skeleton">
+              <div class="comment-skeleton__header">
+                <div class="comment-skeleton__avatar"></div>
+                <div class="comment-skeleton__lines">
+                  <div class="comment-skeleton__line"></div>
+                  <div class="comment-skeleton__line comment-skeleton__line--short"></div>
+                </div>
+              </div>
+              <div class="comment-skeleton__body"></div>
+            </div>
+            <div class="comment-skeleton">
+              <div class="comment-skeleton__header">
+                <div class="comment-skeleton__avatar"></div>
+                <div class="comment-skeleton__lines">
+                  <div class="comment-skeleton__line"></div>
+                  <div class="comment-skeleton__line comment-skeleton__line--short"></div>
+                </div>
+              </div>
+              <div class="comment-skeleton__body"></div>
+            </div>
+            <div class="comment-skeleton">
+              <div class="comment-skeleton__header">
+                <div class="comment-skeleton__avatar"></div>
+                <div class="comment-skeleton__lines">
+                  <div class="comment-skeleton__line"></div>
+                  <div class="comment-skeleton__line comment-skeleton__line--short"></div>
+                </div>
+              </div>
+              <div class="comment-skeleton__body"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulário de Envio -->
+        <div class="comments-form">
+          <h3 class="comments-form__title">Deixe sua avaliação</h3>
+          <p class="comments-form__subtitle">Compartilhe sua experiência com a ÂMINA</p>
+          
+          <div class="comments-form__message comments-form__message--success" id="commentPageSuccess" hidden>
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Avaliação enviada! Aguardando moderação.</span>
+          </div>
+          <div class="comments-form__message comments-form__message--error" id="commentPageError" hidden>
+            <i class="fa-solid fa-exclamation-circle"></i>
+            <span id="commentPageErrorText">Erro ao enviar.</span>
+          </div>
+
+          <form id="commentPageForm">
+            <div class="comments-form__group">
+              <label class="comments-form__label" for="commentPageName">Seu nome</label>
+              <input type="text" id="commentPageName" name="author_name" class="comments-form__input" placeholder="Como gostaria de ser chamada?" required maxlength="120">
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label">Sua avaliação</label>
+              <div class="comments-form__rating" id="starRatingPage">
+                <span class="comments-form__star" data-value="1"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="2"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="3"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="4"><i class="fa-solid fa-star"></i></span>
+                <span class="comments-form__star" data-value="5"><i class="fa-solid fa-star"></i></span>
+              </div>
+              <input type="hidden" name="rating" id="ratingPageInput" value="5">
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label" for="commentPageBody">Seu comentário</label>
+              <textarea id="commentPageBody" name="body" class="comments-form__textarea" placeholder="Conte-nos sobre sua experiência com nossos produtos..." required maxlength="5000"></textarea>
+            </div>
+
+            <div class="comments-form__group">
+              <label class="comments-form__label">Foto (opcional)</label>
+              <div class="comments-form__file">
+                <input type="file" id="commentPagePhoto" name="photo" class="comments-form__file-input" accept="image/jpeg,image/png,image/webp">
+                <div class="comments-form__file-label">
+                  <i class="fa-solid fa-camera"></i>
+                  <span class="comments-form__file-text" id="filePageText">Clique para adicionar foto</span>
+                  <img src="" alt="" class="comments-form__file-preview" id="filePagePreview" hidden>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="comments-form__submit" id="commentPageSubmit">
+              <span>Enviar Avaliação</span>
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="comments-page__load-more" id="loadMoreContainer" hidden>
+        <button class="btn btn--primary" id="loadMoreBtn">
+          <span>Carregar mais</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" id="contato">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <img src="assets/images/logo-amina-3.png" alt="ÂMINA" class="footer__logo" width="180" height="48" />
+          <p>Moda gringa para mulheres que não precisam de permissão para reinar.</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            <a href="#" aria-label="Pinterest"><i class="fa-brands fa-pinterest"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+          </div>
+        </div>
+
+        <div class="footer__col">
+          <h5>Loja</h5>
+          <ul>
+            <li><a href="index.html#novidades">Novidades</a></li>
+            <li><a href="index.html#colecoes">Coleções</a></li>
+            <li><a href="#">Promoções</a></li>
+            <li><a href="index.html#lookbook">Lookbook</a></li>
+            <li><a href="#">Tamanhos Especiais</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__col">
+          <h5>Informações</h5>
+          <ul>
+            <li><a href="index.html#sobre">Nossa História</a></li>
+            <li><a href="#">Política de Trocas</a></li>
+            <li><a href="#">Prazo de Entrega</a></li>
+            <li><a href="#">Formas de Pagamento</a></li>
+            <li><a href="#">Política de Privacidade</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__col">
+          <h5>Atendimento</h5>
+          <ul>
+            <li><a href="#"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a></li>
+            <li><a href="#"><i class="fa-regular fa-envelope"></i> contato@amina.com.br</a></li>
+            <li><a href="#"><i class="fa-regular fa-clock"></i> Seg–Sex: 9h–18h</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <p>&copy; 2026 ÂMINA. Todos os direitos reservados.<br />Site Desenvolvido por <a href="https://mvlopes.com.br/" target="_blank" rel="noopener noreferrer">MVLOPES</a></p>
+        <div class="footer__payments">
+          <i class="fa-brands fa-cc-visa"></i>
+          <i class="fa-brands fa-cc-mastercard"></i>
+          <i class="fa-brands fa-pix"></i>
+          <i class="fa-brands fa-cc-amex"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastMsg">Produto adicionado ao carrinho!</span>
+  </div>
+
+  <!-- Back to Top -->
+  <button class="back-to-top" id="backToTop" aria-label="Voltar ao topo">
+    <i class="fa-solid fa-chevron-up"></i>
+  </button>
+
+  <script src="js/cart-store.js?v=12"></script>
+  <script src="js/config.js?v=13"></script>
+  <script src="js/analytics.js?v=2"></script>
+  <script src="js/main.js?v=18"></script>
+  <script src="js/comments-page.js?v=2"></script>
+</body>
+</html>

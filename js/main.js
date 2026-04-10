@@ -225,6 +225,28 @@ function addToCart(name, price, productId, qtyArg, imageUrlArg) {
     });
   }
   updateCart();
+  if (typeof window.aminaGaEvent === 'function') {
+    /* GA4 só atribui a dimensão itemId com item_id não vazio; string vazia some dos relatórios por produto. */
+    const slug = String(name)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\-]/g, '')
+      .slice(0, 60);
+    const itemIdGa = pid ? String(pid) : 'noid-' + (slug || 'item');
+    window.aminaGaEvent('add_to_cart', {
+      currency: 'BRL',
+      value: safePrice * addQty,
+      items: [
+        {
+          item_id: itemIdGa,
+          item_name: name,
+          price: safePrice,
+          quantity: addQty,
+        },
+      ],
+    });
+  }
   const msg =
     addQty > 1
       ? `${addQty} × "${name}" adicionados ao carrinho!`
